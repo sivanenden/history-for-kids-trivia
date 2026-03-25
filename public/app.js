@@ -834,7 +834,17 @@ function renderPlayerList() {
 }
 
 // ===== NAVIGATION =====
+const screenHistory = [];
+
 function showScreen(id) {
+  // Track history for back navigation (don't track if going back)
+  const currentScreen = document.querySelector('.screen.active');
+  if (currentScreen && currentScreen.id !== id) {
+    screenHistory.push(currentScreen.id);
+    // Keep history short
+    if (screenHistory.length > 10) screenHistory.shift();
+  }
+
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo(0, 0);
@@ -849,10 +859,23 @@ function showScreen(id) {
   }
 }
 
+function goBack() {
+  // Go to previous screen, or welcomeScreen as fallback
+  const prev = screenHistory.pop();
+  if (prev && prev !== 'quizScreen' && prev !== 'resultsScreen' && prev !== 'challengeResultsScreen') {
+    showScreen(prev);
+    // Remove the entry showScreen just added (since we're going back)
+    screenHistory.pop();
+  } else {
+    showScreen('welcomeScreen');
+    screenHistory.pop();
+  }
+}
+
 function quitQuiz() {
   if (currentIndex > 0 && !confirm('בטוח שאתה רוצה לצאת? ההתקדמות לא תישמר.')) return;
   clearTimer();
-  showScreen('welcomeScreen');
+  goBack();
 }
 
 // ===== LEADERBOARD =====
