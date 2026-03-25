@@ -409,7 +409,7 @@ function selectPlayer(name) {
   const player = players.find(p => p.name === name);
   if (!player) return;
 
-  document.getElementById('welcomeGreeting').textContent = `שלום ${name}!`;
+  document.getElementById('welcomeGreeting').textContent = `שלום ${name}`;
   updateLevelCard(player);
   updateDailyDesc();
   showScreen('welcomeScreen');
