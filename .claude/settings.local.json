@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.kan.org.il)",
+      "WebSearch",
+      "WebFetch(domain:www.podtext.co.il)",
+      "WebFetch(domain:podcasts.apple.com)",
+      "WebFetch(domain:podcastim.org.il)",
+      "WebFetch(domain:itunes.apple.com)",
+      "WebFetch(domain:www.kankids.org.il)",
+      "mcp__Claude_Preview__preview_start",
+      "WebFetch(domain:www.omnycontent.com)",
+      "Bash(pip3 install:*)",
+      "Bash(python3 -m playwright install chromium)",
+      "Bash(python3 scrape_podtext.py)",
+      "Bash(python3 -u -c \":*)",
+      "Bash(python3 -u scrape_podtext.py)",
+      "Bash(brew list:*)",
+      "Bash(brew install:*)",
+      "Bash(ffmpeg -version)",
+      "Bash(gh auth:*)"
+    ]
+  }
+}

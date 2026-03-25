@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#3E2723">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>טריוויה - היסטוריה לילדים</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="assets/podcast-cover.jpg">
+  <link rel="apple-touch-icon" href="assets/podcast-cover.jpg">
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo-container">
+        <img src="assets/podcast-cover.jpg" alt="היסטוריה לילדים">
+      </div>
+      <h1>טריוויה - <span>היסטוריה לילדים</span></h1>
+      <p class="subtitle">עם יובל מלחי</p>
+    </header>
+
+    <!-- Streak Badge -->
+    <div class="streak-badge" id="streakBadge">🔥 רצף של <span id="streakCount">0</span>!</div>
+
+    <!-- Player Select Screen -->
+    <div class="screen active" id="playerScreen">
+      <div class="greeting">
+        <h2>ברוכים הבאים!</h2>
+        <p>מי משחק היום?</p>
+      </div>
+
+      <!-- Existing players -->
+      <div class="players-list" id="playersList"></div>
+
+      <!-- Add new player -->
+      <div class="new-player-form">
+        <input type="text" id="newPlayerName" class="player-input" placeholder="הכנס שם חדש..." maxlength="20">
+        <button class="btn btn-primary add-player-btn" onclick="addPlayer()">הוסף שחקן</button>
+      </div>
+    </div>
+
+    <!-- Welcome Screen -->
+    <div class="screen" id="welcomeScreen">
+      <div class="greeting">
+        <h2 id="welcomeGreeting">שלום!</h2>
+        <p>מוכן לאתגר היסטורי?</p>
+      </div>
+
+      <!-- Player level badge -->
+      <div class="player-level-card" id="playerLevelCard">
+        <div class="level-icon" id="levelIcon">🏛️</div>
+        <div class="level-info">
+          <div class="level-title" id="levelTitle">חוקר מתחיל</div>
+          <div class="level-progress-container">
+            <div class="level-progress-bar">
+              <div class="level-progress-fill" id="levelProgressFill" style="width: 0%"></div>
+            </div>
+            <div class="level-progress-text" id="levelProgressText">0/10 לדרגה הבאה</div>
+          </div>
+        </div>
+        <button class="switch-player-btn" onclick="showScreen('playerScreen')" title="החלף שחקן">👤</button>
+      </div>
+
+      <!-- Timer toggle -->
+      <div class="timer-toggle">
+        <label class="toggle-label">
+          <span>⏱️ מצב מירוץ נגד הזמן</span>
+          <input type="checkbox" id="timerToggle">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="mode-buttons">
+        <button class="mode-btn primary" onclick="startMode('random')">
+          <span class="icon">🎲</span>
+          <div>
+            <div class="label">טריוויה אקראית</div>
+            <div class="desc">10 שאלות מכל הנושאים והתקופות</div>
+          </div>
+        </button>
+
+        <button class="mode-btn daily" onclick="startDailyChallenge()">
+          <span class="icon">📅</span>
+          <div>
+            <div class="label">אתגר יומי</div>
+            <div class="desc" id="dailyDesc">5 שאלות חדשות כל יום</div>
+          </div>
+        </button>
+
+        <button class="mode-btn" onclick="showCategories('topic')">
+          <span class="icon">🎯</span>
+          <div>
+            <div class="label">לפי נושא</div>
+            <div class="desc">מדע, הרפתקאות, מוזיקה ועוד</div>
+          </div>
+        </button>
+
+        <button class="mode-btn" onclick="showCategories('era')">
+          <span class="icon">⏰</span>
+          <div>
+            <div class="label">לפי תקופה</div>
+            <div class="desc">מהעת העתיקה ועד ימינו</div>
+          </div>
+        </button>
+      </div>
+
+      <div class="mode-buttons-row">
+        <button class="mode-btn half" onclick="showScreen('leaderboardScreen')">
+          <span class="icon">🏆</span>
+          <div><div class="label">מובילים</div></div>
+        </button>
+        <button class="mode-btn half" onclick="showScreen('badgesScreen')">
+          <span class="icon">🎖️</span>
+          <div><div class="label">הישגים</div></div>
+        </button>
+      </div>
+
+      <!-- Sound toggle -->
+      <div class="sound-toggle">
+        <button class="sound-btn" id="soundBtn" onclick="toggleSound()">🔊</button>
+      </div>
+    </div>
+
+    <!-- Badges Screen -->
+    <div class="screen" id="badgesScreen">
+      <button class="back-btn" onclick="showScreen('welcomeScreen')">→ חזרה</button>
+      <h2 class="category-title">🎖️ הישגים</h2>
+      <div class="badges-grid" id="badgesGrid"></div>
+    </div>
+
+    <!-- Leaderboard Screen -->
+    <div class="screen" id="leaderboardScreen">
+      <button class="back-btn" onclick="showScreen('welcomeScreen')">→ חזרה</button>
+      <h2 class="category-title">🏆 טבלת המובילים</h2>
+      <div class="leaderboard" id="leaderboard"></div>
+    </div>
+
+    <!-- Category Selection Screen -->
+    <div class="screen" id="categoryScreen">
+      <button class="back-btn" onclick="showScreen('welcomeScreen')">→ חזרה</button>
+      <h2 class="category-title" id="categoryTitle"></h2>
+      <div class="category-grid" id="categoryGrid"></div>
+    </div>
+
+    <!-- Quiz Screen -->
+    <div class="screen" id="quizScreen">
+      <div class="quiz-top-bar">
+        <button class="back-btn" onclick="quitQuiz()">→ חזרה</button>
+      </div>
+      <div class="quiz-header">
+        <span class="quiz-progress-text" id="quizProgress">שאלה 1 מתוך 10</span>
+        <span class="quiz-score-text" id="quizScore">0 נקודות</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+      </div>
+
+      <!-- Timer bar (hidden unless timed mode) -->
+      <div class="timer-bar" id="timerBar" style="display:none;">
+        <div class="timer-fill" id="timerFill"></div>
+        <span class="timer-text" id="timerText">15</span>
+      </div>
+
+      <div class="question-card">
+        <div class="question-number" id="questionNumber">שאלה 1</div>
+        <div class="question-text" id="questionText"></div>
+      </div>
+
+      <div class="options-list" id="optionsList"></div>
+
+      <!-- Hint button -->
+      <button class="hint-btn" id="hintBtn" onclick="useHint()">
+        <span class="hint-icon">🐿️</span>
+        <span class="hint-text">שאל את פיצקי</span>
+        <span class="hint-count" id="hintCount">3</span>
+      </button>
+
+      <div class="fun-fact" id="funFact">
+        <div class="fun-fact-title">💡 הידעת?</div>
+        <div class="fun-fact-text" id="funFactText"></div>
+        <div class="episode-link" id="episodeLink">🎧 <span></span></div>
+      </div>
+
+      <button class="next-btn" id="nextBtn" onclick="nextQuestion()">השאלה הבאה ←</button>
+    </div>
+
+    <!-- Results Screen -->
+    <div class="screen" id="resultsScreen">
+      <div class="results-card">
+        <div class="results-emoji" id="resultsEmoji">🏆</div>
+        <div class="results-title" id="resultsTitle">כל הכבוד!</div>
+        <div class="results-score" id="resultsFinalScore">
+          8 <span>מתוך 10</span>
+        </div>
+
+        <div class="results-stats">
+          <div class="result-stat">
+            <div class="result-stat-value" id="resultCorrect">8</div>
+            <div class="result-stat-label">תשובות נכונות</div>
+          </div>
+          <div class="result-stat">
+            <div class="result-stat-value" id="resultStreak">5</div>
+            <div class="result-stat-label">רצף הכי ארוך</div>
+          </div>
+        </div>
+
+        <!-- Level up notification -->
+        <div class="level-up" id="levelUp" style="display:none;">
+          <div class="level-up-text">🎉 עלית לדרגת</div>
+          <div class="level-up-title" id="levelUpTitle"></div>
+        </div>
+
+        <!-- New badges earned -->
+        <div class="new-badges" id="newBadges" style="display:none;"></div>
+
+        <div class="results-message" id="resultsMessage"></div>
+
+        <div class="results-actions">
+          <button class="btn btn-primary" onclick="playAgain()">🔄 שחק שוב</button>
+          <button class="btn btn-share" onclick="shareScore()">📤 שתף תוצאה</button>
+          <button class="btn btn-secondary" onclick="showScreen('welcomeScreen')">🏠 חזרה לתפריט</button>
+        </div>
+
+        <!-- Share toast -->
+        <div class="share-toast" id="shareToast">הועתק! שתף עם חברים 📋</div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      מבוסס על הפודקאסט ״היסטוריה לילדים״ עם יובל מלחי · כאן חינוכית
+    </div>
+  </div>
+
+  <!-- Confetti container -->
+  <div class="confetti-container" id="confettiContainer"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

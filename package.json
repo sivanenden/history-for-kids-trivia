@@ -1,0 +1,9 @@
+{
+  "name": "history-trivia",
+  "version": "1.0.0",
+  "description": "Trivia game based on היסטוריה לילדים podcast",
+  "scripts": {
+    "dev": "npx serve public -l 3000",
+    "start": "npx serve public -l 3000"
+  }
+}

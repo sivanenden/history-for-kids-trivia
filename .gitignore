@@ -1,0 +1,7 @@
+# Git ignore for History for Kids Trivia
+node_modules/
+scraper/transcripts.json
+scraper/episodes.json
+scraper/__pycache__/
+.DS_Store
+*.pyc
