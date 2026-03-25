@@ -277,6 +277,13 @@ function startDailyChallenge() {
   const seed = getDailySeed();
   currentQuestions = seededShuffle(triviaData.questions, seed).slice(0, 5);
 
+  if (currentQuestions.length === 0) {
+    alert('אין מספיק שאלות. נסה שוב מאוחר יותר.');
+    return;
+  }
+
+  challengeStartTime = Date.now();
+  challengeTotalTime = 0;
   showScreen('quizScreen');
   renderQuestion();
 }
@@ -285,7 +292,8 @@ function saveDailyCompletion() {
   if (lastMode !== 'daily' || !currentPlayer) return;
   const dailyData = JSON.parse(localStorage.getItem('historyTriviaDaily') || '{}');
   const today = getDailyDateKey();
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const yd = new Date(Date.now() - 86400000);
+  const yesterday = `${yd.getFullYear()}-${String(yd.getMonth()+1).padStart(2,'0')}-${String(yd.getDate()).padStart(2,'0')}`;
 
   if (!dailyData[currentPlayer]) dailyData[currentPlayer] = { streak: 0, lastDate: null };
   const pd = dailyData[currentPlayer];
@@ -341,14 +349,19 @@ function encodeChallenge() {
     q: questionIds   // question IDs
   };
 
-  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  // Use URL-safe base64 (replace +/ with -_) to prevent chat apps mangling
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const baseUrl = window.location.origin + window.location.pathname;
   return `${baseUrl}?challenge=${encoded}`;
 }
 
 function decodeChallenge(param) {
   try {
-    const decoded = decodeURIComponent(escape(atob(param)));
+    // Restore standard base64 from URL-safe version
+    let b64 = param.replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    const decoded = decodeURIComponent(escape(atob(b64)));
     return JSON.parse(decoded);
   } catch (e) {
     console.error('Failed to decode challenge:', e);
@@ -386,9 +399,14 @@ function checkForChallenge() {
 
 function showChallengeIntro() {
   if (!challengeData) return;
-  const timeStr = challengeData.tm ? formatTime(challengeData.tm) : '';
+  // Validate challenge data types to prevent XSS
+  const name = String(challengeData.c || 'שחקן');
+  const s = parseInt(challengeData.s) || 0;
+  const t = parseInt(challengeData.t) || 0;
+  const tm = parseInt(challengeData.tm) || 0;
+  const timeStr = tm ? formatTime(tm) : '';
   document.getElementById('challengeFrom').innerHTML =
-    `<strong>${escapeHtml(challengeData.c)}</strong> השיג/ה ${challengeData.s}/${challengeData.t}` +
+    `<strong>${escapeHtml(name)}</strong> השיג/ה ${s}/${t}` +
     (timeStr ? ` ב-${timeStr}` : '');
   showScreen('challengeIntroScreen');
 }
@@ -506,7 +524,7 @@ function shareResultBack() {
     a: { n: challengeData.c, s: challengeData.s, t: challengeData.t, tm: challengeData.tm },
     b: { n: myName, s: score, t: total, tm: myTimeSec }
   };
-  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(resultsData))));
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(resultsData)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const baseUrl = window.location.origin + window.location.pathname;
   const resultsUrl = `${baseUrl}?results=${encoded}`;
 
@@ -530,7 +548,7 @@ function shareResultsCard() {
     a: { n: challengeData.c, s: challengeData.s, t: challengeData.t, tm: challengeData.tm },
     b: { n: myName, s: score, t: total, tm: myTimeSec }
   };
-  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(resultsData))));
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(resultsData)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const baseUrl = window.location.origin + window.location.pathname;
   const url = `${baseUrl}?results=${encoded}`;
 
@@ -593,10 +611,12 @@ const SPOTIFY_SHOW_URL = 'https://open.spotify.com/show/0cHdRNk24adWawuZQyyn3b';
 async function init() {
   try {
     const res = await fetch('data/trivia.json');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     triviaData = await res.json();
     console.log(`Loaded ${triviaData.questions.length} questions`);
   } catch (err) {
     console.error('Failed to load trivia data:', err);
+    document.querySelector('.greeting p').textContent = '⚠️ שגיאה בטעינת השאלות. רענן את הדף.';
   }
 
   // Restore sound setting
@@ -607,21 +627,21 @@ async function init() {
 
   renderPlayerList();
 
+  const players = getPlayers();
+  if (players.length === 1) {
+    selectPlayer(players[0].name);
+  }
+
   if (urlAction === 'challenge') {
-    // Show challenge intro - but player needs to select/create a name first
-    const players = getPlayers();
-    if (players.length === 1) {
-      selectPlayer(players[0].name);
+    // If player already selected, show challenge intro directly
+    // Otherwise, pendingChallenge flag will trigger it after player selection
+    if (currentPlayer) {
+      setTimeout(() => showChallengeIntro(), 300);
     }
-    // Wait for data to load, then show challenge intro
-    setTimeout(() => showChallengeIntro(), 300);
+    // If no player selected yet, challengeData stays set and
+    // selectPlayer will check for it
   } else if (urlAction === 'results') {
     // Results card is already shown by checkForChallenge
-  } else {
-    const players = getPlayers();
-    if (players.length === 1) {
-      selectPlayer(players[0].name);
-    }
   }
 
   document.getElementById('newPlayerName').addEventListener('keydown', (e) => {
@@ -677,7 +697,13 @@ function selectPlayer(name) {
   document.getElementById('welcomeGreeting').textContent = `שלום ${name}`;
   updateLevelCard(player);
   updateDailyDesc();
-  showScreen('welcomeScreen');
+
+  // Check for pending challenge
+  if (challengeData) {
+    showChallengeIntro();
+  } else {
+    showScreen('welcomeScreen');
+  }
 }
 
 function updateLevelCard(player) {
@@ -823,6 +849,10 @@ function escapeHtml(str) {
 
 // ===== CATEGORY SELECTION =====
 function showCategories(type) {
+  if (!triviaData || !triviaData.questions) {
+    alert('טוען שאלות... נסה שוב בעוד רגע.');
+    return;
+  }
   const grid = document.getElementById('categoryGrid');
   const title = document.getElementById('categoryTitle');
   grid.innerHTML = '';
@@ -913,7 +943,7 @@ function renderQuestion() {
   document.getElementById('questionText').textContent = q.question;
 
   // Shuffle options
-  const indices = [0, 1, 2, 3];
+  const indices = q.options.map((_, i) => i);
   const shuffledIndices = shuffle(indices);
   currentCorrectDisplayIdx = shuffledIndices.indexOf(q.correct);
 
@@ -1020,6 +1050,7 @@ function selectAnswer(btn, isCorrect, correctDisplayIdx) {
 
 // ===== NEXT QUESTION =====
 function nextQuestion() {
+  if (!answered) return; // Guard against rapid clicks
   currentIndex++;
   if (currentIndex >= currentQuestions.length) {
     showResults();
@@ -1182,8 +1213,16 @@ function fallbackCopy(text) {
 
 // ===== PLAY AGAIN =====
 function playAgain() {
+  // Clear challenge state so "play again" starts a fresh game
+  challengeData = null;
+  challengeStartTime = 0;
+  challengeTotalTime = 0;
+
   if (lastMode === 'daily') {
     startDailyChallenge();
+  } else if (lastMode === 'challenge') {
+    // After a challenge, go to random mode
+    startMode('random');
   } else {
     startMode(lastMode, lastCategory);
   }
@@ -1229,6 +1268,13 @@ document.addEventListener('keydown', (e) => {
     if ((e.key === 'Enter' || e.key === ' ') && answered) {
       nextQuestion();
     }
+  }
+});
+
+// ===== VISIBILITY CHANGE (pause timer when tab hidden) =====
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && timerInterval) {
+    clearTimer();
   }
 });
 

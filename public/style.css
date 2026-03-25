@@ -18,7 +18,7 @@
   --wrong: #A04040;
   --wrong-bg: #F5E8E8;
   --text: #1a0f0a;
-  --text-light: #6D5544;
+  --text-light: #5A4535;
   --shadow: rgba(26, 15, 10, 0.1);
   --shadow-lg: rgba(26, 15, 10, 0.2);
   --radius: 16px;
@@ -31,6 +31,10 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+
+html {
+  color-scheme: light;
 }
 
 body {
@@ -458,7 +462,7 @@ body::before {
 .option-btn:hover:not(.disabled) {
   border-color: var(--gold);
   background: rgba(255, 255, 255, 0.95);
-  transform: translateX(-4px);
+  transform: translateX(4px);
   box-shadow: 0 2px 8px var(--shadow);
 }
 
@@ -1510,6 +1514,87 @@ body::before {
   background: var(--parchment);
   color: var(--gold);
   border: 1px solid var(--border-gold);
+}
+
+/* ===== ACTIVE STATES (mobile tap feedback) ===== */
+.btn:active,
+.mode-btn:active,
+.option-btn:active,
+.category-card:active,
+.back-btn:active,
+.next-btn:active,
+.hint-btn:active,
+.player-card:active {
+  transform: scale(0.97);
+  opacity: 0.85;
+}
+
+/* ===== FOCUS VISIBLE (keyboard accessibility) ===== */
+.btn:focus-visible,
+.mode-btn:focus-visible,
+.option-btn:focus-visible,
+.category-card:focus-visible,
+.back-btn:focus-visible,
+.next-btn:focus-visible,
+.hint-btn:focus-visible,
+.player-card:focus-visible,
+.sound-btn:focus-visible,
+.switch-player-btn:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* ===== TOUCH TARGET FIXES (minimum 44x44px) ===== */
+.player-card .player-delete {
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.switch-player-btn {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.sound-btn {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* ===== TEXT OVERFLOW PROTECTION ===== */
+.question-text,
+.fun-fact-text,
+.option-btn span:last-child,
+.player-name,
+.lb-name {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.player-name,
+.lb-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== 320px SMALL SCREEN FIX ===== */
+@media (max-width: 340px) {
+  .challenge-versus {
+    gap: 8px;
+  }
+  .challenge-player {
+    min-width: 100px;
+    padding: 12px 8px;
+  }
+  .challenge-player-score {
+    font-size: 24px;
+  }
+  .results-score {
+    font-size: 36px;
+  }
 }
 
 /* Safe area for notched phones */
