@@ -322,6 +322,256 @@ function useHint() {
   setTimeout(() => playTone(1100, 0.1), 80);
 }
 
+// ===== CHALLENGE SYSTEM =====
+let challengeData = null; // { challenger, score, total, time, questionIds }
+let challengeStartTime = 0;
+let challengeTotalTime = 0;
+
+function encodeChallenge() {
+  const player = currentPlayer || 'שחקן';
+  const total = currentQuestions.length;
+  const questionIds = currentQuestions.map(q => q.id);
+  const timeSec = Math.round(challengeTotalTime / 1000);
+
+  const data = {
+    c: player,      // challenger name
+    s: score,        // score
+    t: total,        // total questions
+    tm: timeSec,     // time in seconds
+    q: questionIds   // question IDs
+  };
+
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  const baseUrl = window.location.origin + window.location.pathname;
+  return `${baseUrl}?challenge=${encoded}`;
+}
+
+function decodeChallenge(param) {
+  try {
+    const decoded = decodeURIComponent(escape(atob(param)));
+    return JSON.parse(decoded);
+  } catch (e) {
+    console.error('Failed to decode challenge:', e);
+    return null;
+  }
+}
+
+function checkForChallenge() {
+  const params = new URLSearchParams(window.location.search);
+  const challengeParam = params.get('challenge');
+  const resultsParam = params.get('results');
+
+  if (challengeParam) {
+    const data = decodeChallenge(challengeParam);
+    if (data && data.q && data.q.length > 0) {
+      challengeData = data;
+      // Clean URL without reload
+      window.history.replaceState({}, '', window.location.pathname);
+      return 'challenge';
+    }
+  }
+
+  if (resultsParam) {
+    const data = decodeChallenge(resultsParam);
+    if (data) {
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
+      showResultsCard(data);
+      return 'results';
+    }
+  }
+
+  return null;
+}
+
+function showChallengeIntro() {
+  if (!challengeData) return;
+  const timeStr = challengeData.tm ? formatTime(challengeData.tm) : '';
+  document.getElementById('challengeFrom').innerHTML =
+    `<strong>${escapeHtml(challengeData.c)}</strong> השיג/ה ${challengeData.s}/${challengeData.t}` +
+    (timeStr ? ` ב-${timeStr}` : '');
+  showScreen('challengeIntroScreen');
+}
+
+function startChallengeGame() {
+  if (!triviaData || !challengeData) return;
+
+  lastMode = 'challenge';
+  lastCategory = null;
+  score = 0;
+  streak = 0;
+  maxStreak = 0;
+  currentIndex = 0;
+  answered = false;
+  hintsRemaining = 3;
+  fastestAnswerTime = Infinity;
+  timedMode = false;
+
+  // Find questions by ID in the same order
+  currentQuestions = challengeData.q
+    .map(id => triviaData.questions.find(q => q.id === id))
+    .filter(q => q != null);
+
+  if (currentQuestions.length === 0) {
+    alert('לא נמצאו השאלות של האתגר. נסה שוב.');
+    showScreen('welcomeScreen');
+    return;
+  }
+
+  challengeStartTime = Date.now();
+  showScreen('quizScreen');
+  renderQuestion();
+}
+
+function declineChallenge() {
+  challengeData = null;
+  showScreen('playerScreen');
+}
+
+function shareChallenge() {
+  challengeTotalTime = challengeTotalTime || 0;
+  const url = encodeChallenge();
+  const player = currentPlayer || 'שחקן';
+  const total = currentQuestions.length;
+
+  const text = `⚔️ ${player} מאתגר אותך!
+📜 השגתי ${score}/${total} בטריוויה של היסטוריה לילדים!
+אתה יכול לנצח אותי? 😏
+👇 לחץ כאן לאתגר:
+${url}`;
+
+  // Try WhatsApp first (most natural for Israeli kids)
+  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+  window.open(whatsappUrl, '_blank');
+}
+
+function showChallengeResults() {
+  if (!challengeData) return;
+
+  const myTimeSec = Math.round((Date.now() - challengeStartTime) / 1000);
+  const myTotal = currentQuestions.length;
+
+  // Challenger info
+  document.getElementById('challengerName').textContent = challengeData.c;
+  document.getElementById('challengerScore').textContent = `${challengeData.s}/${challengeData.t}`;
+  document.getElementById('challengerTime').textContent = challengeData.tm ? formatTime(challengeData.tm) : '';
+
+  // My info
+  document.getElementById('challengedName').textContent = currentPlayer || 'אתה';
+  document.getElementById('challengedScore').textContent = `${score}/${myTotal}`;
+  document.getElementById('challengedTime').textContent = formatTime(myTimeSec);
+
+  // Determine winner
+  const winnerEl = document.getElementById('challengeWinner');
+  if (score > challengeData.s) {
+    winnerEl.textContent = '🏆 ניצחת!';
+    winnerEl.className = 'challenge-winner win';
+    launchConfetti();
+  } else if (score < challengeData.s) {
+    winnerEl.textContent = `😤 ${challengeData.c} ניצח/ה!`;
+    winnerEl.className = 'challenge-winner lose';
+  } else {
+    // Tie - check time
+    if (challengeData.tm && myTimeSec < challengeData.tm) {
+      winnerEl.textContent = '🏆 תיקו בניקוד, אבל היית מהיר/ה יותר!';
+      winnerEl.className = 'challenge-winner win';
+      launchConfetti();
+    } else if (challengeData.tm && myTimeSec > challengeData.tm) {
+      winnerEl.textContent = `😤 תיקו! אבל ${challengeData.c} היה/ייתה מהיר/ה יותר`;
+      winnerEl.className = 'challenge-winner lose';
+    } else {
+      winnerEl.textContent = '🤝 תיקו מושלם!';
+      winnerEl.className = 'challenge-winner tie';
+    }
+  }
+
+  // Store for share-back
+  challengeTotalTime = myTimeSec * 1000;
+
+  showScreen('challengeResultsScreen');
+}
+
+function shareResultBack() {
+  const myTimeSec = Math.round(challengeTotalTime / 1000);
+  const myName = currentPlayer || 'חבר';
+  const total = currentQuestions.length;
+
+  let resultEmoji;
+  if (score > challengeData.s) resultEmoji = '💪 ניצחתי!';
+  else if (score < challengeData.s) resultEmoji = '😤 הפעם ניצחת...';
+  else resultEmoji = '🤝 תיקו!';
+
+  // Build results link so Player A can see the comparison card
+  const resultsData = {
+    a: { n: challengeData.c, s: challengeData.s, t: challengeData.t, tm: challengeData.tm },
+    b: { n: myName, s: score, t: total, tm: myTimeSec }
+  };
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(resultsData))));
+  const baseUrl = window.location.origin + window.location.pathname;
+  const resultsUrl = `${baseUrl}?results=${encoded}`;
+
+  const text = `⚔️ סיימתי את האתגר שלך!
+📊 ${myName}: ${score}/${total} ${myTimeSec ? `ב-${formatTime(myTimeSec)}` : ''}
+📊 ${challengeData.c}: ${challengeData.s}/${challengeData.t} ${challengeData.tm ? `ב-${formatTime(challengeData.tm)}` : ''}
+${resultEmoji}
+👇 ראה את התוצאות:
+${resultsUrl}`;
+
+  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+  window.open(whatsappUrl, '_blank');
+}
+
+function shareResultsCard() {
+  const myTimeSec = Math.round(challengeTotalTime / 1000);
+  const myName = currentPlayer || 'שחקן';
+  const total = currentQuestions.length;
+
+  const resultsData = {
+    a: { n: challengeData.c, s: challengeData.s, t: challengeData.t, tm: challengeData.tm },
+    b: { n: myName, s: score, t: total, tm: myTimeSec }
+  };
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(resultsData))));
+  const baseUrl = window.location.origin + window.location.pathname;
+  const url = `${baseUrl}?results=${encoded}`;
+
+  if (navigator.share) {
+    navigator.share({ text: '📊 תוצאות האתגר:', url }).catch(() => copyToClipboard(url));
+  } else {
+    copyToClipboard(url);
+  }
+}
+
+function showResultsCard(data) {
+  // Display a shared results comparison card
+  document.getElementById('challengerName').textContent = data.a.n;
+  document.getElementById('challengerScore').textContent = `${data.a.s}/${data.a.t}`;
+  document.getElementById('challengerTime').textContent = data.a.tm ? formatTime(data.a.tm) : '';
+
+  document.getElementById('challengedName').textContent = data.b.n;
+  document.getElementById('challengedScore').textContent = `${data.b.s}/${data.b.t}`;
+  document.getElementById('challengedTime').textContent = data.b.tm ? formatTime(data.b.tm) : '';
+
+  const winnerEl = document.getElementById('challengeWinner');
+  if (data.b.s > data.a.s) {
+    winnerEl.textContent = `🏆 ${data.b.n} ניצח/ה!`;
+    winnerEl.className = 'challenge-winner win';
+  } else if (data.a.s > data.b.s) {
+    winnerEl.textContent = `🏆 ${data.a.n} ניצח/ה!`;
+    winnerEl.className = 'challenge-winner win';
+  } else {
+    winnerEl.textContent = '🤝 תיקו!';
+    winnerEl.className = 'challenge-winner tie';
+  }
+
+  showScreen('challengeResultsScreen');
+}
+
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return m > 0 ? `${m}:${String(s).padStart(2, '0')} דק׳` : `${s} שנ׳`;
+}
+
 // ===== STATE =====
 let triviaData = null;
 let currentQuestions = [];
@@ -352,11 +602,26 @@ async function init() {
   // Restore sound setting
   document.getElementById('soundBtn').textContent = soundEnabled ? '🔊' : '🔇';
 
+  // Check if this is a challenge link
+  const urlAction = checkForChallenge();
+
   renderPlayerList();
 
-  const players = getPlayers();
-  if (players.length === 1) {
-    selectPlayer(players[0].name);
+  if (urlAction === 'challenge') {
+    // Show challenge intro - but player needs to select/create a name first
+    const players = getPlayers();
+    if (players.length === 1) {
+      selectPlayer(players[0].name);
+    }
+    // Wait for data to load, then show challenge intro
+    setTimeout(() => showChallengeIntro(), 300);
+  } else if (urlAction === 'results') {
+    // Results card is already shown by checkForChallenge
+  } else {
+    const players = getPlayers();
+    if (players.length === 1) {
+      selectPlayer(players[0].name);
+    }
   }
 
   document.getElementById('newPlayerName').addEventListener('keydown', (e) => {
@@ -627,6 +892,8 @@ function startMode(mode, category = null) {
     return;
   }
 
+  challengeStartTime = Date.now();
+  challengeTotalTime = 0;
   showScreen('quizScreen');
   renderQuestion();
 }
@@ -767,6 +1034,11 @@ function showResults() {
   const total = currentQuestions.length;
   const pct = score / total;
 
+  // Track total game time for challenges
+  if (challengeStartTime > 0) {
+    challengeTotalTime = Date.now() - challengeStartTime;
+  }
+
   // Save daily completion
   saveDailyCompletion();
 
@@ -849,6 +1121,13 @@ function showResults() {
   }
 
   document.getElementById('shareToast').classList.remove('visible');
+
+  // If this was a challenge, show challenge results instead
+  if (lastMode === 'challenge' && challengeData) {
+    showChallengeResults();
+    return;
+  }
+
   showScreen('resultsScreen');
 }
 

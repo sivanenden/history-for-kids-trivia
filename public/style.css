@@ -1266,6 +1266,154 @@ body::before {
   .category-card { padding: 16px 8px; }
 }
 
+/* ===== CHALLENGE SYSTEM ===== */
+
+/* Challenge button */
+.btn-challenge {
+  background: linear-gradient(135deg, #E53935, #C62828);
+  color: white;
+  border: none;
+  font-weight: 700;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-challenge:hover {
+  background: linear-gradient(135deg, #F44336, #D32F2F);
+  transform: translateY(-1px);
+}
+
+/* Challenge Intro Screen */
+.challenge-intro {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.challenge-sword {
+  font-size: 64px;
+  margin-bottom: 16px;
+  animation: swordBounce 1s ease-in-out infinite alternate;
+}
+
+@keyframes swordBounce {
+  from { transform: translateY(0) rotate(-5deg); }
+  to { transform: translateY(-8px) rotate(5deg); }
+}
+
+.challenge-intro h2 {
+  font-size: 28px;
+  color: var(--brown-dark);
+  margin-bottom: 12px;
+}
+
+.challenge-from {
+  font-size: 18px;
+  color: var(--text);
+  background: var(--cream-dark);
+  padding: 12px 20px;
+  border-radius: 12px;
+  margin: 16px 0;
+  border-right: 4px solid var(--gold);
+}
+
+.challenge-desc {
+  font-size: 16px;
+  color: var(--text-light);
+  margin-bottom: 24px;
+}
+
+.challenge-start-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.btn-large {
+  padding: 16px 32px !important;
+  font-size: 20px !important;
+}
+
+/* Challenge Results - VS Screen */
+.challenge-results-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--brown-dark);
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.challenge-versus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.challenge-player {
+  flex: 1;
+  text-align: center;
+  background: var(--cream-dark);
+  border-radius: 16px;
+  padding: 20px 12px;
+  min-width: 120px;
+}
+
+.challenge-player-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--brown-dark);
+  margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.challenge-player-score {
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+
+.challenge-player-time {
+  font-size: 14px;
+  color: var(--text-light);
+}
+
+.challenge-vs {
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--brown-light);
+  text-shadow: 0 2px 4px var(--shadow);
+}
+
+.challenge-winner {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 800;
+  padding: 16px;
+  border-radius: 12px;
+  margin: 16px 0;
+}
+
+.challenge-winner.win {
+  background: linear-gradient(135deg, #E8F5E9, #C8E6C9);
+  color: #2E7D32;
+}
+
+.challenge-winner.lose {
+  background: linear-gradient(135deg, #FFEBEE, #FFCDD2);
+  color: #C62828;
+}
+
+.challenge-winner.tie {
+  background: linear-gradient(135deg, #FFF8E1, #FFECB3);
+  color: #F57F17;
+}
+
 /* Safe area for notched phones */
 @supports (padding-top: env(safe-area-inset-top)) {
   .app {

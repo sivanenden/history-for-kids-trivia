@@ -220,12 +220,54 @@
 
         <div class="results-actions">
           <button class="btn btn-primary" onclick="playAgain()">🔄 שחק שוב</button>
+          <button class="btn btn-challenge" onclick="shareChallenge()">⚔️ אתגר חבר</button>
           <button class="btn btn-share" onclick="shareScore()">📤 שתף תוצאה</button>
           <button class="btn btn-secondary" onclick="showScreen('welcomeScreen')">🏠 חזרה לתפריט</button>
         </div>
 
         <!-- Share toast -->
         <div class="share-toast" id="shareToast">הועתק! שתף עם חברים 📋</div>
+      </div>
+    </div>
+
+    <!-- Challenge Intro Screen (Player B sees this) -->
+    <div class="screen" id="challengeIntroScreen">
+      <div class="challenge-intro">
+        <div class="challenge-sword">⚔️</div>
+        <h2>קיבלת אתגר!</h2>
+        <p class="challenge-from" id="challengeFrom"></p>
+        <p class="challenge-desc">ענה על אותן השאלות ובדוק מי טוב יותר!</p>
+        <div class="challenge-start-actions">
+          <button class="btn btn-primary btn-large" onclick="startChallengeGame()">🎮 קבל אתגר!</button>
+          <button class="btn btn-secondary" onclick="declineChallenge()">🏠 לא עכשיו</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Challenge Results Screen (Player B sees comparison) -->
+    <div class="screen" id="challengeResultsScreen">
+      <div class="results-card">
+        <div class="challenge-results-title">⚔️ תוצאות האתגר</div>
+        <div class="challenge-versus">
+          <div class="challenge-player">
+            <div class="challenge-player-name" id="challengerName">שחקן א׳</div>
+            <div class="challenge-player-score" id="challengerScore">7/10</div>
+            <div class="challenge-player-time" id="challengerTime"></div>
+          </div>
+          <div class="challenge-vs">VS</div>
+          <div class="challenge-player">
+            <div class="challenge-player-name" id="challengedName">שחקן ב׳</div>
+            <div class="challenge-player-score" id="challengedScore">8/10</div>
+            <div class="challenge-player-time" id="challengedTime"></div>
+          </div>
+        </div>
+        <div class="challenge-winner" id="challengeWinner">🏆 ניצחת!</div>
+        <div class="results-actions">
+          <button class="btn btn-challenge" onclick="shareResultBack()">💬 שלח תוצאה חזרה</button>
+          <button class="btn btn-challenge" onclick="shareResultsCard()">📊 שתף כרטיס תוצאות</button>
+          <button class="btn btn-primary" onclick="playAgain()">🔄 שחק שוב</button>
+          <button class="btn btn-secondary" onclick="showScreen('welcomeScreen')">🏠 חזרה לתפריט</button>
+        </div>
       </div>
     </div>
 
