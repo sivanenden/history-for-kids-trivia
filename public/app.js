@@ -42,17 +42,17 @@ const BADGES = [
 
 function getPlayerBadges() {
   if (!currentPlayer) return [];
-  const data = JSON.parse(localStorage.getItem('historyTriviaBadges') || '{}');
+  const data = JSON.parse(safeGetItem('historyTriviaBadges', '{}'));
   return data[currentPlayer] || [];
 }
 
 function savePlayerBadge(badgeId) {
   if (!currentPlayer) return false;
-  const data = JSON.parse(localStorage.getItem('historyTriviaBadges') || '{}');
+  const data = JSON.parse(safeGetItem('historyTriviaBadges', '{}'));
   if (!data[currentPlayer]) data[currentPlayer] = [];
   if (data[currentPlayer].includes(badgeId)) return false;
   data[currentPlayer].push(badgeId);
-  localStorage.setItem('historyTriviaBadges', JSON.stringify(data));
+  safeSetItem('historyTriviaBadges', JSON.stringify(data));
   return true;
 }
 
@@ -87,7 +87,7 @@ function checkAndAwardBadges() {
     newBadges.push(BADGES.find(b => b.id === 'legend'));
 
   // Daily week (7 day streak)
-  const dailyData = JSON.parse(localStorage.getItem('historyTriviaDaily') || '{}');
+  const dailyData = JSON.parse(safeGetItem('historyTriviaDaily', '{}'));
   const playerDaily = dailyData[currentPlayer];
   if (playerDaily && playerDaily.streak >= 7 && savePlayerBadge('daily_week'))
     newBadges.push(BADGES.find(b => b.id === 'daily_week'));
@@ -111,7 +111,7 @@ function renderBadgesScreen() {
 }
 
 // ===== SOUND SYSTEM =====
-let soundEnabled = localStorage.getItem('historyTriviaSound') !== 'false';
+let soundEnabled = safeGetItem('historyTriviaSound', 'true') !== 'false';
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
 
@@ -153,7 +153,7 @@ function playLevelUpSound() {
 
 function toggleSound() {
   soundEnabled = !soundEnabled;
-  localStorage.setItem('historyTriviaSound', soundEnabled);
+  safeSetItem('historyTriviaSound', soundEnabled);
   document.getElementById('soundBtn').textContent = soundEnabled ? '🔊' : '🔇';
   if (soundEnabled) playTone(440, 0.1);
 }
@@ -162,6 +162,7 @@ function toggleSound() {
 let timedMode = false;
 let timerInterval = null;
 let timerStartTime = 0;
+let timerElapsed = 0; // Track elapsed time for pause/resume
 let fastestAnswerTime = Infinity;
 const TIMER_SECONDS = 15;
 
@@ -176,10 +177,38 @@ function startTimer() {
   fill.className = 'timer-fill';
   text.textContent = TIMER_SECONDS;
   timerStartTime = Date.now();
+  timerElapsed = 0;
 
-  let remaining = TIMER_SECONDS;
   timerInterval = setInterval(() => {
-    remaining = TIMER_SECONDS - (Date.now() - timerStartTime) / 1000;
+    const remaining = TIMER_SECONDS - timerElapsed - (Date.now() - timerStartTime) / 1000;
+    if (remaining <= 0) {
+      clearTimer();
+      if (!answered) autoTimeOut();
+      return;
+    }
+    const pct = (remaining / TIMER_SECONDS) * 100;
+    fill.style.width = pct + '%';
+    text.textContent = Math.ceil(remaining);
+    fill.className = 'timer-fill' + (remaining < 5 ? ' danger' : remaining < 10 ? ' warning' : '');
+  }, 100);
+}
+
+function pauseTimer() {
+  if (!timerInterval) return;
+  timerElapsed += (Date.now() - timerStartTime) / 1000;
+  clearInterval(timerInterval);
+  timerInterval = null;
+}
+
+function resumeTimer() {
+  if (!timedMode || answered || timerInterval) return;
+  timerStartTime = Date.now();
+  const bar = document.getElementById('timerBar');
+  const fill = document.getElementById('timerFill');
+  const text = document.getElementById('timerText');
+
+  timerInterval = setInterval(() => {
+    const remaining = TIMER_SECONDS - timerElapsed - (Date.now() - timerStartTime) / 1000;
     if (remaining <= 0) {
       clearTimer();
       if (!answered) autoTimeOut();
@@ -194,6 +223,7 @@ function startTimer() {
 
 function clearTimer() {
   if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  timerElapsed = 0;
 }
 
 function autoTimeOut() {
@@ -255,7 +285,7 @@ function startDailyChallenge() {
   }
 
   // Check if already completed today
-  const dailyData = JSON.parse(localStorage.getItem('historyTriviaDaily') || '{}');
+  const dailyData = JSON.parse(safeGetItem('historyTriviaDaily', '{}'));
   const playerDaily = dailyData[currentPlayer];
   const today = getDailyDateKey();
 
@@ -266,13 +296,7 @@ function startDailyChallenge() {
 
   lastMode = 'daily';
   lastCategory = null;
-  score = 0;
-  streak = 0;
-  maxStreak = 0;
-  currentIndex = 0;
-  answered = false;
-  hintsRemaining = 3;
-  fastestAnswerTime = Infinity;
+  resetGameState();
 
   const seed = getDailySeed();
   currentQuestions = seededShuffle(triviaData.questions, seed).slice(0, 5);
@@ -290,7 +314,7 @@ function startDailyChallenge() {
 
 function saveDailyCompletion() {
   if (lastMode !== 'daily' || !currentPlayer) return;
-  const dailyData = JSON.parse(localStorage.getItem('historyTriviaDaily') || '{}');
+  const dailyData = JSON.parse(safeGetItem('historyTriviaDaily', '{}'));
   const today = getDailyDateKey();
   const yd = new Date(Date.now() - 86400000);
   const yesterday = `${yd.getFullYear()}-${String(yd.getMonth()+1).padStart(2,'0')}-${String(yd.getDate()).padStart(2,'0')}`;
@@ -304,7 +328,7 @@ function saveDailyCompletion() {
     pd.streak = 1;
   }
   pd.lastDate = today;
-  localStorage.setItem('historyTriviaDaily', JSON.stringify(dailyData));
+  safeSetItem('historyTriviaDaily', JSON.stringify(dailyData));
 }
 
 // ===== HINT SYSTEM (שאל את פיצקי) =====
@@ -416,13 +440,7 @@ function startChallengeGame() {
 
   lastMode = 'challenge';
   lastCategory = null;
-  score = 0;
-  streak = 0;
-  maxStreak = 0;
-  currentIndex = 0;
-  answered = false;
-  hintsRemaining = 3;
-  fastestAnswerTime = Infinity;
+  resetGameState();
   timedMode = false;
 
   // Find questions by ID in the same order
@@ -590,11 +608,21 @@ function formatTime(seconds) {
   return m > 0 ? `${m}:${String(s).padStart(2, '0')} דק׳` : `${s} שנ׳`;
 }
 
+// ===== SAFE LOCALSTORAGE =====
+function safeGetItem(key, fallback) {
+  try { return localStorage.getItem(key) || fallback; } catch { return fallback; }
+}
+
+function safeSetItem(key, value) {
+  try { localStorage.setItem(key, value); } catch (e) { console.warn('Storage error:', e); }
+}
+
 // ===== STATE =====
 let triviaData = null;
 let currentQuestions = [];
 let currentIndex = 0;
 let score = 0;
+let correctCount = 0; // Track actual correct answers separately from bonus score
 let streak = 0;
 let maxStreak = 0;
 let answered = false;
@@ -607,8 +635,24 @@ const LETTERS = ['א', 'ב', 'ג', 'ד'];
 const STORAGE_KEY = 'historyTriviaPlayers';
 const SPOTIFY_SHOW_URL = 'https://open.spotify.com/show/0cHdRNk24adWawuZQyyn3b';
 
+function resetGameState() {
+  score = 0;
+  correctCount = 0;
+  streak = 0;
+  maxStreak = 0;
+  currentIndex = 0;
+  answered = false;
+  hintsRemaining = 3;
+  fastestAnswerTime = Infinity;
+  challengeStartTime = Date.now();
+  challengeTotalTime = 0;
+}
+
 // ===== INIT =====
 async function init() {
+  // Show loading state
+  document.body.classList.add('loading');
+
   try {
     const res = await fetch('data/trivia.json');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -616,8 +660,11 @@ async function init() {
     console.log(`Loaded ${triviaData.questions.length} questions`);
   } catch (err) {
     console.error('Failed to load trivia data:', err);
-    document.querySelector('.greeting p').textContent = '⚠️ שגיאה בטעינת השאלות. רענן את הדף.';
+    const errEl = document.getElementById('loadingError');
+    if (errEl) errEl.style.display = 'block';
   }
+
+  document.body.classList.remove('loading');
 
   // Restore sound setting
   document.getElementById('soundBtn').textContent = soundEnabled ? '🔊' : '🔇';
@@ -651,11 +698,11 @@ async function init() {
 
 // ===== PLAYER MANAGEMENT =====
 function getPlayers() {
-  return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  return JSON.parse(safeGetItem(STORAGE_KEY, '[]'));
 }
 
 function savePlayers(players) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(players));
+  safeSetItem(STORAGE_KEY, JSON.stringify(players));
 }
 
 function addPlayer() {
@@ -727,7 +774,7 @@ function updateLevelCard(player) {
 }
 
 function updateDailyDesc() {
-  const dailyData = JSON.parse(localStorage.getItem('historyTriviaDaily') || '{}');
+  const dailyData = JSON.parse(safeGetItem('historyTriviaDaily', '{}'));
   const pd = dailyData[currentPlayer];
   const today = getDailyDateKey();
   const el = document.getElementById('dailyDesc');
@@ -901,13 +948,7 @@ function startMode(mode, category = null) {
 
   lastMode = mode;
   lastCategory = category;
-  score = 0;
-  streak = 0;
-  maxStreak = 0;
-  currentIndex = 0;
-  answered = false;
-  hintsRemaining = 3;
-  fastestAnswerTime = Infinity;
+  resetGameState();
   timedMode = document.getElementById('timerToggle').checked;
 
   let pool = [...triviaData.questions];
@@ -997,6 +1038,7 @@ function selectAnswer(btn, isCorrect, correctDisplayIdx) {
   if (isCorrect) {
     btn.classList.add('correct');
     score++;
+    correctCount++;
     streak++;
     maxStreak = Math.max(maxStreak, streak);
     playCorrectSound();
@@ -1063,7 +1105,7 @@ function nextQuestion() {
 function showResults() {
   clearTimer();
   const total = currentQuestions.length;
-  const pct = score / total;
+  const pct = correctCount / total; // Use actual correct count, not bonus-inflated score
 
   // Track total game time for challenges
   if (challengeStartTime > 0) {
@@ -1081,7 +1123,7 @@ function showResults() {
     const player = players.find(p => p.name === currentPlayer);
     if (player) {
       const oldLevel = getLevel(player.totalCorrect);
-      player.totalCorrect += score;
+      player.totalCorrect += correctCount; // Use actual correct answers, not bonus-inflated score
       player.totalGames += 1;
       player.bestScore = Math.max(player.bestScore, score);
       player.bestStreak = Math.max(player.bestStreak, maxStreak);
@@ -1119,8 +1161,11 @@ function showResults() {
 
   document.getElementById('resultsEmoji').textContent = emoji;
   document.getElementById('resultsTitle').textContent = title;
-  document.getElementById('resultsFinalScore').innerHTML = `${score} <span>מתוך ${total}</span>`;
-  document.getElementById('resultCorrect').textContent = score;
+  const displayScore = timedMode && score > correctCount
+    ? `${correctCount} <span>מתוך ${total}</span> <span class="bonus-note">+${score - correctCount} בונוס ⚡</span>`
+    : `${correctCount} <span>מתוך ${total}</span>`;
+  document.getElementById('resultsFinalScore').innerHTML = displayScore;
+  document.getElementById('resultCorrect').textContent = correctCount;
   document.getElementById('resultStreak').textContent = maxStreak;
   document.getElementById('resultsMessage').textContent = message;
   document.getElementById('progressFill').style.width = '100%';
@@ -1271,10 +1316,12 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// ===== VISIBILITY CHANGE (pause timer when tab hidden) =====
+// ===== VISIBILITY CHANGE (pause/resume timer) =====
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden && timerInterval) {
-    clearTimer();
+  if (document.hidden) {
+    pauseTimer();
+  } else {
+    resumeTimer();
   }
 });
 
