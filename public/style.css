@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800;900&display=swap');
 
 :root {
   --gold: #D4A017;
@@ -27,7 +27,7 @@
 }
 
 body {
-  font-family: 'Heebo', sans-serif;
+  font-family: 'Rubik', sans-serif;
   background: var(--cream);
   color: var(--text);
   direction: rtl;
@@ -234,7 +234,7 @@ body::before {
   background: none;
   border: none;
   color: var(--brown);
-  font-family: 'Heebo', sans-serif;
+  font-family: 'Rubik', sans-serif;
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
@@ -375,7 +375,7 @@ body::before {
   border-radius: var(--radius-sm);
   background: white;
   cursor: pointer;
-  font-family: 'Heebo', sans-serif;
+  font-family: 'Rubik', sans-serif;
   font-size: 16px;
   font-weight: 500;
   color: var(--text);
@@ -497,7 +497,7 @@ body::before {
   border-radius: var(--radius-sm);
   background: linear-gradient(135deg, var(--gold), var(--gold-light));
   color: var(--brown-dark);
-  font-family: 'Heebo', sans-serif;
+  font-family: 'Rubik', sans-serif;
   font-size: 18px;
   font-weight: 700;
   cursor: pointer;
@@ -592,7 +592,7 @@ body::before {
   padding: 16px;
   border: none;
   border-radius: var(--radius-sm);
-  font-family: 'Heebo', sans-serif;
+  font-family: 'Rubik', sans-serif;
   font-size: 17px;
   font-weight: 700;
   cursor: pointer;
@@ -696,7 +696,7 @@ body::before {
   padding: 14px 18px;
   border: 2px solid var(--cream-dark);
   border-radius: var(--radius-sm);
-  font-family: 'Heebo', sans-serif;
+  font-family: 'Rubik', sans-serif;
   font-size: 16px;
   color: var(--text);
   background: white;
@@ -1055,7 +1055,7 @@ body::before {
   border-radius: var(--radius-sm);
   background: var(--cream);
   cursor: pointer;
-  font-family: 'Heebo', sans-serif;
+  font-family: 'Rubik', sans-serif;
   font-size: 15px;
   font-weight: 600;
   color: var(--brown);
