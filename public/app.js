@@ -484,9 +484,9 @@ function shareChallenge() {
   const total = currentQuestions.length;
 
   const text = `⚔️ ${player} מאתגר אותך!
-📜 השגתי ${score}/${total} בטריוויה של היסטוריה לילדים!
-אתה יכול לנצח אותי? 😏
-👇 לחץ כאן לאתגר:
+📜 השגתי ${correctCount}/${total} בטריוויה של היסטוריה לילדים!
+את/ה יכול/ה לנצח אותי? 😏
+👇 לחץ/י כאן לאתגר:
 ${url}`;
 
   // Try WhatsApp first (most natural for Israeli kids)
@@ -546,21 +546,21 @@ function shareResultBack() {
   const total = currentQuestions.length;
 
   let resultEmoji;
-  if (score > challengeData.s) resultEmoji = '💪 ניצחתי!';
-  else if (score < challengeData.s) resultEmoji = '😤 הפעם ניצחת...';
+  if (correctCount > challengeData.s) resultEmoji = '💪 ניצחתי!';
+  else if (correctCount < challengeData.s) resultEmoji = '😤 הפעם ניצחת...';
   else resultEmoji = '🤝 תיקו!';
 
   // Build results link so Player A can see the comparison card
   const resultsData = {
     a: { n: challengeData.c, s: challengeData.s, t: challengeData.t, tm: challengeData.tm },
-    b: { n: myName, s: score, t: total, tm: myTimeSec }
+    b: { n: myName, s: correctCount, t: total, tm: myTimeSec }
   };
   const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(resultsData)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const baseUrl = window.location.origin + window.location.pathname;
   const resultsUrl = `${baseUrl}?results=${encoded}`;
 
   const text = `⚔️ סיימתי את האתגר שלך!
-📊 ${myName}: ${score}/${total} ${myTimeSec ? `ב-${formatTime(myTimeSec)}` : ''}
+📊 ${myName}: ${correctCount}/${total} ${myTimeSec ? `ב-${formatTime(myTimeSec)}` : ''}
 📊 ${challengeData.c}: ${challengeData.s}/${challengeData.t} ${challengeData.tm ? `ב-${formatTime(challengeData.tm)}` : ''}
 ${resultEmoji}
 👇 ראה את התוצאות:

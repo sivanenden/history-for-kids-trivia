@@ -505,11 +505,17 @@ body::before {
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.option-btn:hover:not(.disabled) {
-  border-color: var(--gold);
-  background: rgba(255, 255, 255, 0.95);
-  transform: translateX(4px);
-  box-shadow: 0 2px 8px var(--shadow);
+@media (hover: hover) {
+  .option-btn:hover:not(.disabled) {
+    border-color: var(--gold);
+    background: rgba(255, 255, 255, 0.95);
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+}
+
+.option-btn:active:not(.disabled) {
+  transform: scale(0.98);
 }
 
 .option-btn .option-letter {
