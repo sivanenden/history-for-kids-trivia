@@ -3,7 +3,7 @@
 ## Project Overview
 A Hebrew trivia game for kids based on the podcast "היסטוריה לילדים" (History for Kids) by Yuval Malchi on Kan Educational (~266 episodes). Mobile-first, RTL, static site with an adventure map / explorer's journal visual theme.
 
-**Live URL**: Deployed on Vercel (auto-deploys on git push)
+**Live URL**: https://history-for-kids-trivia.vercel.app (auto-deploys on git push)
 **Built for**: Gur (age 12), avid listener of the podcast
 
 ## Architecture
@@ -57,6 +57,7 @@ History for kids/
 - Multiple player profiles per device
 - Progress tracking (total correct, games played, best score, best streak)
 - Level progression system (9 levels from חוקר מתחיל to אגדה חיה)
+- Topics and eras played tracked per player (for badges)
 
 ### Challenge-a-Friend System (⚔️ אתגר חבר)
 Flow:
@@ -71,12 +72,32 @@ Flow:
 ### Other Features
 - **⏱️ Timed mode** - 15-second timer per question, bonus points for fast answers
 - **🐿️ שאל את פיצי** (Ask Pizi) - Hint system, eliminates 2 wrong answers (3 hints per game)
-- **🔊 Sound effects** - Synthesized tones for correct/wrong/level-up (Web Audio API)
-- **🎖️ Badges** - 9 achievements (first win, perfect score, hot streak, etc.)
+- **🔊 Sound effects** - Synthesized tones for correct/wrong/level-up (Web Audio API, iOS-safe with resume)
+- **🎖️ Badges** - 9 achievements (first win, perfect score, hot streak, topic master, time traveler, etc.)
 - **🏆 Leaderboard** - Local leaderboard across all players on device
-- **Spotify link** - Each question links to the podcast on Spotify
-- **Confetti** - CSS animation on wins and level-ups
-- **Keyboard support** - Number keys 1-4 for answers, Enter/Space for next
+- **🎧 Spotify link** - Each question links to the podcast episode on Spotify (semantic `<a>` tag)
+- **🎯 Progress dots** - Visual stepping stones showing correct/wrong/current per question
+- **💥 Score pop** - Score counter bounces and flashes green on correct answers
+- **📖 Fun fact delay** - 2-second delay before "next" button to encourage reading fun facts
+- **🎊 Confetti** - CSS animation on wins and level-ups
+- **⌨️ Keyboard support** - Number keys 1-4 for answers, Enter/Space for next
+- **🔙 Smart back navigation** - Back button returns to previous screen, not always home
+
+## Security
+
+### Implemented Protections
+- **XSS prevention**: `escapeHtml()` for all user input in innerHTML; `.textContent` used where possible
+- **Safe localStorage**: `safeParseJson()` wrapper prevents crash on corrupted data
+- **URL validation**: Null checks in `showResultsCard()` for malformed challenge URLs
+- **Input capping**: Challenge question IDs capped at 20 to prevent DoS
+- **iOS audio**: AudioContext.resume() for suspended state on iOS Safari
+- **No eval/document.write**: No dangerous DOM patterns used
+- **Semantic links**: Episode links use `<a>` tags with `rel="noopener"`
+
+### Known Acceptable Risks
+- Player names in challenge URLs are base64-encoded (not encrypted) - acceptable for first names in a kids' game
+- trivia.json data inserted via innerHTML in category cards - trusted first-party data
+- localStorage is user-manipulable - gracefully handled with fallbacks
 
 ## Data Pipeline
 
@@ -105,6 +126,12 @@ git push
 - Episodes covered in trivia: 143
 - Total questions: 848
 - Coverage: ~54%
+
+### Quality Checks Done
+- Hebrew typo scan: 14 spelling/grammar errors fixed
+- Factual accuracy: 1 wrong answer corrected (slavery abolition year)
+- Name clarity: 8 questions updated with full names for lesser-known figures
+- Mixed Latin chars: 2 questions fixed (פיתgoras, הטכנולוgia)
 
 ## Trivia JSON Schema
 ```json
@@ -140,6 +167,16 @@ git push
 | 170 | פרופסור | 🏅 |
 | 230 | גאון היסטורי | 👑 |
 | 300 | אגדה חיה | 🏆 |
+
+## LocalStorage Keys
+| Key | Type | Description |
+|-----|------|-------------|
+| `historyTriviaPlayers` | Array | Player profiles (name, stats) |
+| `historyTriviaBadges` | Object | Earned badges per player |
+| `historyTriviaDaily` | Object | Daily challenge completion/streak data |
+| `historyTriviaPlayedTopics` | Object | Topics played per player (for badge) |
+| `historyTriviaPlayedEras` | Object | Eras played per player (for badge) |
+| `historyTriviaSound` | String | Sound on/off preference |
 
 ## Running Locally
 ```bash
