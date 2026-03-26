@@ -1309,14 +1309,17 @@ function showResults() {
 function shareScore() {
   const total = currentQuestions.length;
   const player = currentPlayer || 'שחקן';
-  const level = currentPlayer
-    ? getLevel(getPlayers().find(p => p.name === currentPlayer)?.totalCorrect || 0)
-    : LEVELS[0];
+  const playerData = currentPlayer
+    ? getPlayers().find(p => p.name === currentPlayer)
+    : null;
+  const level = playerData ? getLevel(playerData.totalCorrect) : LEVELS[0];
+  // Use the results screen title (matches what user sees)
+  const resultsTitle = document.getElementById('resultsTitle')?.textContent || level.name;
 
   const text = [
     `📜 טריוויה - היסטוריה לילדים`,
     `${player} השיג ${correctCount}/${total}!`,
-    `${level.icon} דרגה: ${level.name}`,
+    `${level.icon} דרגה: ${resultsTitle}`,
     `🔥 רצף: ${maxStreak}`,
     ``,
     `בואו לשחק גם! 🎮`,
