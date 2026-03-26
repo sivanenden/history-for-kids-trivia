@@ -42,13 +42,13 @@ const BADGES = [
 
 function getPlayerBadges() {
   if (!currentPlayer) return [];
-  const data = JSON.parse(safeGetItem('historyTriviaBadges', '{}'));
+  const data = safeParseJson('historyTriviaBadges', {});
   return data[currentPlayer] || [];
 }
 
 function savePlayerBadge(badgeId) {
   if (!currentPlayer) return false;
-  const data = JSON.parse(safeGetItem('historyTriviaBadges', '{}'));
+  const data = safeParseJson('historyTriviaBadges', {});
   if (!data[currentPlayer]) data[currentPlayer] = [];
   if (data[currentPlayer].includes(badgeId)) return false;
   data[currentPlayer].push(badgeId);
@@ -87,10 +87,22 @@ function checkAndAwardBadges() {
     newBadges.push(BADGES.find(b => b.id === 'legend'));
 
   // Daily week (7 day streak)
-  const dailyData = JSON.parse(safeGetItem('historyTriviaDaily', '{}'));
+  const dailyData = safeParseJson('historyTriviaDaily', {});
   const playerDaily = dailyData[currentPlayer];
   if (playerDaily && playerDaily.streak >= 7 && savePlayerBadge('daily_week'))
     newBadges.push(BADGES.find(b => b.id === 'daily_week'));
+
+  // Topic master (played all 9 topics)
+  const playedTopics = safeParseJson('historyTriviaPlayedTopics', {});
+  const playerTopics = playedTopics[currentPlayer] || [];
+  if (playerTopics.length >= 9 && savePlayerBadge('topic_master'))
+    newBadges.push(BADGES.find(b => b.id === 'topic_master'));
+
+  // Time traveler (played all 6 eras)
+  const playedEras = safeParseJson('historyTriviaPlayedEras', {});
+  const playerEras = playedEras[currentPlayer] || [];
+  if (playerEras.length >= 6 && savePlayerBadge('time_traveler'))
+    newBadges.push(BADGES.find(b => b.id === 'time_traveler'));
 
   return newBadges;
 }
@@ -117,6 +129,7 @@ let audioCtx = null;
 
 function getAudioCtx() {
   if (!audioCtx) audioCtx = new AudioCtx();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
   return audioCtx;
 }
 
@@ -285,7 +298,7 @@ function startDailyChallenge() {
   }
 
   // Check if already completed today
-  const dailyData = JSON.parse(safeGetItem('historyTriviaDaily', '{}'));
+  const dailyData = safeParseJson('historyTriviaDaily', {});
   const playerDaily = dailyData[currentPlayer];
   const today = getDailyDateKey();
 
@@ -314,7 +327,7 @@ function startDailyChallenge() {
 
 function saveDailyCompletion() {
   if (lastMode !== 'daily' || !currentPlayer) return;
-  const dailyData = JSON.parse(safeGetItem('historyTriviaDaily', '{}'));
+  const dailyData = safeParseJson('historyTriviaDaily', {});
   const today = getDailyDateKey();
   const yd = new Date(Date.now() - 86400000);
   const yesterday = `${yd.getFullYear()}-${String(yd.getMonth()+1).padStart(2,'0')}-${String(yd.getDate()).padStart(2,'0')}`;
@@ -367,7 +380,7 @@ function encodeChallenge() {
 
   const data = {
     c: player,      // challenger name
-    s: score,        // score
+    s: correctCount, // correct answers (not bonus-inflated score)
     t: total,        // total questions
     tm: timeSec,     // time in seconds
     q: questionIds   // question IDs
@@ -443,8 +456,8 @@ function startChallengeGame() {
   resetGameState();
   timedMode = false;
 
-  // Find questions by ID in the same order
-  currentQuestions = challengeData.q
+  // Find questions by ID in the same order (cap at 20 for safety)
+  currentQuestions = (challengeData.q || []).slice(0, 20)
     .map(id => triviaData.questions.find(q => q.id === id))
     .filter(q => q != null);
 
@@ -578,6 +591,11 @@ function shareResultsCard() {
 }
 
 function showResultsCard(data) {
+  // Validate data structure
+  if (!data || !data.a || !data.b) {
+    showScreen('welcomeScreen');
+    return;
+  }
   // Display a shared results comparison card
   document.getElementById('challengerName').textContent = data.a.n;
   document.getElementById('challengerScore').textContent = `${data.a.s}/${data.a.t}`;
@@ -615,6 +633,11 @@ function safeGetItem(key, fallback) {
 
 function safeSetItem(key, value) {
   try { localStorage.setItem(key, value); } catch (e) { console.warn('Storage error:', e); }
+}
+
+function safeParseJson(key, fallback) {
+  try { return JSON.parse(safeGetItem(key, JSON.stringify(fallback))); }
+  catch { return fallback; }
 }
 
 // ===== STATE =====
@@ -700,7 +723,7 @@ async function init() {
 
 // ===== PLAYER MANAGEMENT =====
 function getPlayers() {
-  return JSON.parse(safeGetItem(STORAGE_KEY, '[]'));
+  return safeParseJson(STORAGE_KEY, []);
 }
 
 function savePlayers(players) {
@@ -776,7 +799,7 @@ function updateLevelCard(player) {
 }
 
 function updateDailyDesc() {
-  const dailyData = JSON.parse(safeGetItem('historyTriviaDaily', '{}'));
+  const dailyData = safeParseJson('historyTriviaDaily', {});
   const pd = dailyData[currentPlayer];
   const today = getDailyDateKey();
   const el = document.getElementById('dailyDesc');
@@ -1134,8 +1157,7 @@ function selectAnswer(btn, isCorrect, correctDisplayIdx) {
   // Spotify episode link
   const linkEl = document.getElementById('episodeLink');
   linkEl.querySelector('span').textContent = `שמע את הפרק: ${q.episode}`;
-  linkEl.onclick = () => window.open(SPOTIFY_SHOW_URL, '_blank');
-  linkEl.style.cursor = 'pointer';
+  linkEl.href = SPOTIFY_SHOW_URL;
 
   document.getElementById('funFact').classList.add('visible');
 
@@ -1192,6 +1214,24 @@ function showResults() {
       }
       savePlayers(players);
     }
+  }
+
+  // Track topics and eras played (for badges)
+  if (currentPlayer) {
+    const questTopics = [...new Set(currentQuestions.map(q => q.topic))];
+    const questEras = [...new Set(currentQuestions.map(q => q.era))];
+
+    const playedTopics = safeParseJson('historyTriviaPlayedTopics', {});
+    const playerTopics = new Set(playedTopics[currentPlayer] || []);
+    questTopics.forEach(t => playerTopics.add(t));
+    playedTopics[currentPlayer] = [...playerTopics];
+    safeSetItem('historyTriviaPlayedTopics', JSON.stringify(playedTopics));
+
+    const playedEras = safeParseJson('historyTriviaPlayedEras', {});
+    const playerEras = new Set(playedEras[currentPlayer] || []);
+    questEras.forEach(e => playerEras.add(e));
+    playedEras[currentPlayer] = [...playerEras];
+    safeSetItem('historyTriviaPlayedEras', JSON.stringify(playedEras));
   }
 
   // Check badges
@@ -1275,7 +1315,7 @@ function shareScore() {
 
   const text = [
     `📜 טריוויה - היסטוריה לילדים`,
-    `${player} השיג ${score}/${total}!`,
+    `${player} השיג ${correctCount}/${total}!`,
     `${level.icon} דרגה: ${level.name}`,
     `🔥 רצף: ${maxStreak}`,
     ``,
@@ -1322,7 +1362,8 @@ function playAgain() {
   challengeTotalTime = 0;
 
   if (lastMode === 'daily') {
-    startDailyChallenge();
+    // Daily can only be played once per day, fall back to random
+    startMode('random');
   } else if (lastMode === 'challenge') {
     // After a challenge, go to random mode
     startMode('random');

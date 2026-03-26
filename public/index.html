@@ -141,7 +141,7 @@
 
       <!-- Sound toggle -->
       <div class="sound-toggle">
-        <button class="sound-btn" id="soundBtn" onclick="toggleSound()">🔊</button>
+        <button class="sound-btn" id="soundBtn" onclick="toggleSound()" aria-label="הפעל/השתק צלילים">🔊</button>
       </div>
     </div>
 
@@ -203,7 +203,7 @@
       <div class="fun-fact" id="funFact">
         <div class="fun-fact-title">💡 הידעת?</div>
         <div class="fun-fact-text" id="funFactText"></div>
-        <div class="episode-link" id="episodeLink">🎧 <span></span></div>
+        <a class="episode-link" id="episodeLink" target="_blank" rel="noopener" aria-label="שמע את הפרק בספוטיפיי">🎧 <span></span></a>
       </div>
 
       <button class="next-btn" id="nextBtn" onclick="nextQuestion()">השאלה הבאה ←</button>
