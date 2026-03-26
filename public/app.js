@@ -626,6 +626,7 @@ let correctCount = 0; // Track actual correct answers separately from bonus scor
 let streak = 0;
 let maxStreak = 0;
 let answered = false;
+let dotResults = []; // Track correct/wrong per question for progress dots
 let lastMode = null;
 let lastCategory = null;
 let currentPlayer = null;
@@ -642,6 +643,7 @@ function resetGameState() {
   maxStreak = 0;
   currentIndex = 0;
   answered = false;
+  dotResults = [];
   hintsRemaining = 3;
   fastestAnswerTime = Infinity;
   challengeStartTime = Date.now();
@@ -1003,6 +1005,9 @@ function renderQuestion() {
   document.getElementById('progressFill').style.width =
     `${((currentIndex) / currentQuestions.length) * 100}%`;
 
+  // Render progress dots
+  renderProgressDots();
+
   document.getElementById('questionNumber').textContent = `שאלה ${currentIndex + 1}`;
   document.getElementById('questionText').textContent = q.question;
 
@@ -1039,6 +1044,23 @@ function renderQuestion() {
   // Start timer
   document.getElementById('timerBar').style.display = timedMode ? 'block' : 'none';
   startTimer();
+}
+
+// ===== PROGRESS DOTS =====
+function renderProgressDots() {
+  const container = document.getElementById('progressDots');
+  container.innerHTML = '';
+  const total = currentQuestions.length;
+  for (let i = 0; i < total; i++) {
+    const dot = document.createElement('span');
+    dot.className = 'progress-dot';
+    if (i === currentIndex) dot.classList.add('current');
+    if (i < dotResults.length) {
+      dot.classList.add(dotResults[i] ? 'correct-dot' : 'wrong-dot');
+      dot.classList.remove('current');
+    }
+    container.appendChild(dot);
+  }
 }
 
 // ===== SELECT ANSWER =====
@@ -1087,13 +1109,24 @@ function selectAnswer(btn, isCorrect, correctDisplayIdx) {
     playWrongSound();
   }
 
+  // Track result for progress dots
+  dotResults.push(isCorrect);
+  renderProgressDots();
+
   allBtns.forEach(b => {
     if (!b.classList.contains('correct') && !b.classList.contains('wrong')) {
       b.classList.add('disabled');
     }
   });
 
-  document.getElementById('quizScore').textContent = `${score} נקודות`;
+  // Update score with pop animation
+  const scoreEl = document.getElementById('quizScore');
+  scoreEl.textContent = `${score} נקודות`;
+  if (isCorrect) {
+    scoreEl.classList.remove('score-pop');
+    void scoreEl.offsetWidth; // Force reflow for re-triggering
+    scoreEl.classList.add('score-pop');
+  }
 
   const q = currentQuestions[currentIndex];
   document.getElementById('funFactText').textContent = q.funFact;
@@ -1110,7 +1143,9 @@ function selectAnswer(btn, isCorrect, correctDisplayIdx) {
   nextBtn.textContent = currentIndex === currentQuestions.length - 1
     ? 'לתוצאות! 🎉'
     : 'השאלה הבאה ←';
-  nextBtn.classList.add('visible');
+  // Delay showing next button by 2s to encourage reading the fun fact
+  nextBtn.classList.remove('visible');
+  setTimeout(() => nextBtn.classList.add('visible'), 2000);
 }
 
 // ===== NEXT QUESTION =====
