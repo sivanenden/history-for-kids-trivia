@@ -33,6 +33,10 @@
   box-sizing: border-box;
 }
 
+button, a, input, .option-btn, .menu-card {
+  touch-action: manipulation;
+}
+
 html {
   color-scheme: light;
 }
@@ -1211,8 +1215,10 @@ body::before {
   height: 100%;
   background: var(--correct);
   border-radius: 3px;
-  transition: width 0.1s linear;
   width: 100%;
+  transform-origin: right; /* RTL: shrink from left */
+  transition: transform 0.1s linear;
+  will-change: transform;
 }
 
 .timer-fill.warning { background: var(--gold); }

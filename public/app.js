@@ -186,7 +186,7 @@ function startTimer() {
   const fill = document.getElementById('timerFill');
   const text = document.getElementById('timerText');
   bar.style.display = 'block';
-  fill.style.width = '100%';
+  fill.style.transform = 'scaleX(1)';
   fill.className = 'timer-fill';
   text.textContent = TIMER_SECONDS;
   timerStartTime = Date.now();
@@ -200,7 +200,7 @@ function startTimer() {
       return;
     }
     const pct = (remaining / TIMER_SECONDS) * 100;
-    fill.style.width = pct + '%';
+    fill.style.transform = `scaleX(${pct / 100})`;
     text.textContent = Math.ceil(remaining);
     fill.className = 'timer-fill' + (remaining < 5 ? ' danger' : remaining < 10 ? ' warning' : '');
   }, 100);
@@ -228,7 +228,7 @@ function resumeTimer() {
       return;
     }
     const pct = (remaining / TIMER_SECONDS) * 100;
-    fill.style.width = pct + '%';
+    fill.style.transform = `scaleX(${pct / 100})`;
     text.textContent = Math.ceil(remaining);
     fill.className = 'timer-fill' + (remaining < 5 ? ' danger' : remaining < 10 ? ' warning' : '');
   }, 100);
