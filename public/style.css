@@ -977,83 +977,138 @@ body::before {
 }
 
 /* ===== LEADERBOARD ===== */
-.leaderboard-btn {
-  margin-top: 16px;
-}
-
-.leaderboard {
+/* ===== STATS PAGE ===== */
+.stats-content {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 16px;
   margin-top: 8px;
 }
 
-.lb-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 18px;
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid var(--border-brown);
-  border-radius: var(--radius-sm);
-  box-shadow: 0 2px 6px var(--shadow);
-}
-
-.lb-row.gold {
-  border-right: 4px solid var(--gold);
-  background: rgba(255, 248, 225, 0.85);
-}
-.lb-row.silver {
-  border-right: 4px solid #9E9E9E;
-  background: rgba(245, 245, 245, 0.85);
-}
-.lb-row.bronze {
-  border-right: 4px solid var(--adventure-red);
-  background: rgba(255, 243, 224, 0.85);
-}
-
-.lb-rank {
-  font-size: 24px;
-  font-weight: 900;
-  color: var(--brown-dark);
-  width: 36px;
-  text-align: center;
-  flex-shrink: 0;
-}
-
-.lb-name {
-  flex: 1;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--brown-dark);
-}
-
-.lb-level {
-  font-size: 12px;
-  color: var(--text-light);
-}
-
-.lb-score-col {
-  text-align: center;
-  flex-shrink: 0;
-}
-
-.lb-score-val {
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--gold);
-}
-
-.lb-score-label {
-  font-size: 10px;
-  color: var(--text-light);
-}
-
-.leaderboard-empty {
+.stats-empty {
   text-align: center;
   padding: 40px 20px;
   color: var(--text-light);
   font-size: 16px;
+}
+
+.stats-level-card {
+  text-align: center;
+  padding: 24px 20px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 2px solid var(--gold);
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 8px var(--shadow);
+}
+
+.stats-level-icon {
+  font-size: 48px;
+  margin-bottom: 4px;
+}
+
+.stats-level-name {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--brown-dark);
+  margin-bottom: 16px;
+}
+
+.stats-progress {
+  margin-top: 8px;
+}
+
+.stats-progress-label {
+  font-size: 13px;
+  color: var(--text-light);
+  margin-bottom: 6px;
+}
+
+.stats-progress-bar {
+  height: 10px;
+  background: var(--border-brown);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.stats-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--adventure-red));
+  border-radius: 5px;
+  transition: width 0.5s ease;
+}
+
+.stats-progress-text {
+  font-size: 12px;
+  color: var(--text-light);
+  margin-top: 4px;
+}
+
+.stats-max-level {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gold);
+  margin-top: 8px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.stat-box {
+  padding: 16px 12px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--border-brown);
+  border-radius: var(--radius-sm);
+  text-align: center;
+  box-shadow: 0 2px 6px var(--shadow);
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--gold);
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--text-light);
+  margin-top: 2px;
+}
+
+.stats-section {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--border-brown);
+  border-radius: var(--radius-sm);
+  padding: 16px 18px;
+  box-shadow: 0 2px 6px var(--shadow);
+}
+
+.stats-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--brown-dark);
+  margin-bottom: 12px;
+}
+
+.stats-coverage-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-brown);
+  font-size: 14px;
+  color: var(--brown-dark);
+}
+
+.stats-coverage-row:last-child {
+  border-bottom: none;
+}
+
+.stats-coverage-val {
+  font-weight: 700;
+  color: var(--gold);
 }
 
 /* ===== SHARE TOAST ===== */
@@ -1630,14 +1685,12 @@ body::before {
 .question-text,
 .fun-fact-text,
 .option-btn span:last-child,
-.player-name,
-.lb-name {
+.player-name {
   overflow-wrap: break-word;
   word-break: break-word;
 }
 
-.player-name,
-.lb-name {
+.player-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

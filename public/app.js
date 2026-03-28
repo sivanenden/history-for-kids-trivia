@@ -875,7 +875,7 @@ function showScreen(id) {
   window.scrollTo(0, 0);
 
   if (id === 'playerScreen') renderPlayerList();
-  if (id === 'leaderboardScreen') renderLeaderboard();
+  if (id === 'leaderboardScreen') renderStats();
   if (id === 'badgesScreen') renderBadgesScreen();
   if (id === 'welcomeScreen' && currentPlayer) {
     const player = getPlayers().find(p => p.name === currentPlayer);
@@ -904,36 +904,101 @@ function quitQuiz() {
 }
 
 // ===== LEADERBOARD =====
-function renderLeaderboard() {
-  const lb = document.getElementById('leaderboard');
-  const players = getPlayers().sort((a, b) => b.totalCorrect - a.totalCorrect);
+function renderStats() {
+  const container = document.getElementById('statsContent');
+  const player = currentPlayer
+    ? getPlayers().find(p => p.name === currentPlayer)
+    : null;
 
-  if (players.length === 0) {
-    lb.innerHTML = '<div class="leaderboard-empty">עדיין אין שחקנים. הוסף שחקן והתחל לשחק!</div>';
+  if (!player) {
+    container.innerHTML = '<div class="stats-empty">בחר שחקן כדי לראות סטטיסטיקות</div>';
     return;
   }
 
-  const medals = ['🥇', '🥈', '🥉'];
-  const rowClasses = ['gold', 'silver', 'bronze'];
+  const level = getLevel(player.totalCorrect);
+  const nextLevel = getNextLevel(player.totalCorrect);
+  const accuracy = player.totalGames > 0
+    ? Math.round((player.totalCorrect / (player.totalGames * 10)) * 100)
+    : 0;
+  const playedTopics = safeParseJson('historyTriviaPlayedTopics', {});
+  const playerTopics = playedTopics[currentPlayer] || [];
+  const playedEras = safeParseJson('historyTriviaPlayedEras', {});
+  const playerEras = playedEras[currentPlayer] || [];
+  const dailyData = safeParseJson('historyTriviaDaily', {});
+  const playerDaily = dailyData[currentPlayer];
+  const dailyStreak = playerDaily?.streak || 0;
 
-  lb.innerHTML = players.map((p, i) => {
-    const level = getLevel(p.totalCorrect);
-    const cls = i < 3 ? rowClasses[i] : '';
-    const rank = i < 3 ? medals[i] : (i + 1);
-    return `
-      <div class="lb-row ${cls}">
-        <div class="lb-rank">${rank}</div>
-        <div>
-          <div class="lb-name">${escapeHtml(p.name)}</div>
-          <div class="lb-level">${level.icon} ${level.name}</div>
-        </div>
-        <div class="lb-score-col">
-          <div class="lb-score-val">${p.totalCorrect}</div>
-          <div class="lb-score-label">תשובות נכונות</div>
-        </div>
+  // Progress to next level
+  let progressHTML = '';
+  if (nextLevel) {
+    const progress = player.totalCorrect - level.threshold;
+    const needed = nextLevel.threshold - level.threshold;
+    const pct = Math.min(100, Math.round((progress / needed) * 100));
+    progressHTML = `
+      <div class="stats-progress">
+        <div class="stats-progress-label">התקדמות לדרגת ${nextLevel.icon} ${nextLevel.name}</div>
+        <div class="stats-progress-bar"><div class="stats-progress-fill" style="width: ${pct}%"></div></div>
+        <div class="stats-progress-text">${player.totalCorrect} / ${nextLevel.threshold} תשובות נכונות</div>
       </div>
     `;
-  }).join('');
+  } else {
+    progressHTML = '<div class="stats-max-level">🏆 הגעת לדרגה הגבוהה ביותר!</div>';
+  }
+
+  // Topic coverage
+  const allTopics = triviaData ? [...new Set(triviaData.map(q => q.topic))] : [];
+  const topicCoverage = allTopics.length > 0
+    ? `${playerTopics.length} מתוך ${allTopics.length}`
+    : '—';
+
+  // Era coverage
+  const allEras = triviaData ? [...new Set(triviaData.map(q => q.era))] : [];
+  const eraCoverage = allEras.length > 0
+    ? `${playerEras.length} מתוך ${allEras.length}`
+    : '—';
+
+  container.innerHTML = `
+    <div class="stats-level-card">
+      <div class="stats-level-icon">${level.icon}</div>
+      <div class="stats-level-name">${level.name}</div>
+      ${progressHTML}
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-value">${player.totalCorrect}</div>
+        <div class="stat-label">תשובות נכונות</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value">${player.totalGames}</div>
+        <div class="stat-label">משחקים</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value">${accuracy}%</div>
+        <div class="stat-label">אחוז הצלחה</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value">${player.bestStreak}</div>
+        <div class="stat-label">רצף שיא</div>
+      </div>
+    </div>
+
+    <div class="stats-section">
+      <div class="stats-section-title">🗺️ כיסוי</div>
+      <div class="stats-coverage-row">
+        <span>נושאים שנוסו</span>
+        <span class="stats-coverage-val">${topicCoverage}</span>
+      </div>
+      <div class="stats-coverage-row">
+        <span>תקופות שנוסו</span>
+        <span class="stats-coverage-val">${eraCoverage}</span>
+      </div>
+      <div class="stats-coverage-row">
+        <span>רצף יומי נוכחי</span>
+        <span class="stats-coverage-val">${dailyStreak} 🔥</span>
+      </div>
+    </div>
+  `;
 }
 
 function escapeHtml(str) {
