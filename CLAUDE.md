@@ -74,7 +74,7 @@ Flow:
 - **🐿️ שאל את פיצי** (Ask Pizi) - Hint system, eliminates 2 wrong answers (3 hints per game)
 - **🔊 Sound effects** - Synthesized tones for correct/wrong/level-up (Web Audio API, iOS-safe with resume)
 - **🎖️ Badges** - 9 achievements (first win, perfect score, hot streak, topic master, time traveler, etc.)
-- **🏆 Leaderboard** - Local leaderboard across all players on device
+- **📊 Personal stats** - Stats page with accuracy %, coverage, progress bar to next level
 - **🎧 Spotify link** - Each question links to the podcast episode on Spotify (semantic `<a>` tag)
 - **🎯 Progress dots** - Visual stepping stones showing correct/wrong/current per question
 - **💥 Score pop** - Score counter bounces and flashes green on correct answers
@@ -128,10 +128,12 @@ git push
 - Coverage: ~54%
 
 ### Quality Checks Done
-- Hebrew typo scan: 14 spelling/grammar errors fixed
-- Factual accuracy: 1 wrong answer corrected (slavery abolition year)
-- Name clarity: 8 questions updated with full names for lesser-known figures
-- Mixed Latin chars: 2 questions fixed (פיתgoras, הטכנולוgia)
+- Hebrew typo scan: 14 spelling/grammar errors fixed (construct state, garbled text, gender mismatches, etc.)
+- Factual accuracy: 2 wrong answers corrected (slavery abolition year 1861→1865, בני נתר→בנות נתר)
+- Name clarity: 8 questions updated with full names for lesser-known figures (קליי מרזו, פרנאו מנדש פינטו, etc.)
+- Mixed Latin chars: 2 questions fixed (פיתgoras→פיתגורס, הטכנולוgia→הטכנולוגיה)
+- Vague references: "המשלחת" questions clarified with expedition names (e.g., לואיס וקלארק)
+- Michelangelo fun fact clarified to avoid confusion about correct answer
 
 ## Trivia JSON Schema
 ```json
@@ -188,3 +190,17 @@ npx serve public -l 3000
 - GitHub repo: `sivanenden/history-for-kids-trivia`
 - Auto-deploys on push to `main`
 - Output directory: `public`
+- **Vercel Web Analytics** enabled (script in index.html)
+
+## Scheduled Maintenance
+- **check-new-transcripts**: Runs on 1st and 15th of each month at 10am
+- Checks podtext.co.il for new transcripts, generates trivia, commits and pushes
+- Requires `ANTHROPIC_API_KEY` environment variable
+
+## Performance Optimizations
+- `<link rel="preload">` for trivia.json (parallel fetch with CSS)
+- Google Fonts: 5 weights only (400-800), unused 300/900 removed
+- `touch-action: manipulation` on all interactive elements (no 300ms tap delay)
+- Timer bar uses `transform: scaleX()` instead of `width` (GPU-composited)
+- Compressed podcast cover image (3.3MB → 475KB)
+- Open Graph meta tags for WhatsApp/social sharing preview cards
