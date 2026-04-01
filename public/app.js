@@ -1492,5 +1492,78 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
+// ===== ANALYTICS & ERROR TRACKING =====
+const track = (name, data) => {
+  try {
+    // Vercel Web Analytics custom events
+    if (window.va) window.va('event', { name, data });
+  } catch (e) { /* silent */ }
+};
+
+// Track game starts
+const _origStartMode = startMode;
+startMode = function(mode, category) {
+  track('game_start', { mode, category: category || 'none' });
+  return _origStartMode.apply(this, arguments);
+};
+
+// Track game completions
+const _origShowResults = showResults;
+showResults = function() {
+  track('game_complete', {
+    mode: lastMode,
+    score: score,
+    total: questions.length,
+    accuracy: Math.round((score / questions.length) * 100),
+    timed: timedMode,
+    hintsUsed: 3 - hintsLeft
+  });
+  return _origShowResults.apply(this, arguments);
+};
+
+// Track challenge shares
+const _origCreateChallenge = typeof createChallenge === 'function' ? createChallenge : null;
+if (_origCreateChallenge) {
+  createChallenge = function() {
+    track('challenge_shared', { score, total: questions.length });
+    return _origCreateChallenge.apply(this, arguments);
+  };
+}
+
+// Track hint usage
+const _origUseHint = typeof useHint === 'function' ? useHint : null;
+if (_origUseHint) {
+  useHint = function() {
+    track('hint_used', { questionIndex: currentIndex, hintsLeft });
+    return _origUseHint.apply(this, arguments);
+  };
+}
+
+// Global error handler - catch crashes
+window.addEventListener('error', (e) => {
+  track('js_error', {
+    message: e.message,
+    source: (e.filename || '').split('/').pop(),
+    line: e.lineno,
+    col: e.colno
+  });
+});
+
+// Unhandled promise rejections
+window.addEventListener('unhandledrejection', (e) => {
+  track('promise_error', {
+    message: String(e.reason).slice(0, 200)
+  });
+});
+
+// Track session duration on page leave
+let sessionStart = Date.now();
+window.addEventListener('beforeunload', () => {
+  track('session_end', {
+    duration_sec: Math.round((Date.now() - sessionStart) / 1000),
+    player: currentPlayer || 'none'
+  });
+});
+
 // ===== START =====
 init();
