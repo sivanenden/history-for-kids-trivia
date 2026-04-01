@@ -751,6 +751,46 @@ function addPlayer() {
   selectPlayer(name);
 }
 
+function editPlayer(oldName, event) {
+  event.stopPropagation();
+  const newName = prompt('שם חדש:', oldName);
+  if (!newName || newName.trim() === '' || newName.trim() === oldName) return;
+  const trimmed = newName.trim().slice(0, 20);
+
+  const players = getPlayers();
+  // Check for duplicate name
+  if (players.some(p => p.name === trimmed)) {
+    alert('כבר יש שחקן עם השם הזה!');
+    return;
+  }
+
+  const player = players.find(p => p.name === oldName);
+  if (player) player.name = trimmed;
+  savePlayers(players);
+
+  // Update badges
+  const badges = safeParseJson('historyTriviaBadges', {});
+  if (badges[oldName]) { badges[trimmed] = badges[oldName]; delete badges[oldName]; }
+  localStorage.setItem('historyTriviaBadges', JSON.stringify(badges));
+
+  // Update played topics/eras
+  const topics = safeParseJson('historyTriviaPlayedTopics', {});
+  if (topics[oldName]) { topics[trimmed] = topics[oldName]; delete topics[oldName]; }
+  localStorage.setItem('historyTriviaPlayedTopics', JSON.stringify(topics));
+
+  const eras = safeParseJson('historyTriviaPlayedEras', {});
+  if (eras[oldName]) { eras[trimmed] = eras[oldName]; delete eras[oldName]; }
+  localStorage.setItem('historyTriviaPlayedEras', JSON.stringify(eras));
+
+  // Update daily challenge data
+  const daily = safeParseJson('historyTriviaDaily', {});
+  if (daily[oldName]) { daily[trimmed] = daily[oldName]; delete daily[oldName]; }
+  localStorage.setItem('historyTriviaDaily', JSON.stringify(daily));
+
+  if (currentPlayer === oldName) currentPlayer = trimmed;
+  renderPlayerList();
+}
+
 function deletePlayer(name, event) {
   event.stopPropagation();
   if (!confirm(`למחוק את השחקן ${name}?`)) return;
@@ -846,6 +886,12 @@ function renderPlayerList() {
     info.appendChild(nameEl);
     info.appendChild(rankEl);
 
+    const editBtn = document.createElement('button');
+    editBtn.className = 'player-edit';
+    editBtn.title = 'ערוך שם';
+    editBtn.textContent = '✏️';
+    editBtn.onclick = (e) => editPlayer(p.name, e);
+
     const delBtn = document.createElement('button');
     delBtn.className = 'player-delete';
     delBtn.title = 'מחק שחקן';
@@ -854,6 +900,7 @@ function renderPlayerList() {
 
     card.appendChild(avatar);
     card.appendChild(info);
+    card.appendChild(editBtn);
     card.appendChild(delBtn);
     list.appendChild(card);
   }
@@ -1238,7 +1285,7 @@ function selectAnswer(btn, isCorrect, correctDisplayIdx) {
     : 'השאלה הבאה ←';
   // Delay showing next button by 2s to encourage reading the fun fact
   nextBtn.classList.remove('visible');
-  setTimeout(() => nextBtn.classList.add('visible'), 2000);
+  setTimeout(() => nextBtn.classList.add('visible'), 1000);
 }
 
 // ===== NEXT QUESTION =====

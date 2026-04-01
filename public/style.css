@@ -856,6 +856,7 @@ body::before {
   color: var(--text-light);
 }
 
+.player-card .player-edit,
 .player-card .player-delete {
   background: none;
   border: none;
@@ -866,6 +867,7 @@ body::before {
   transition: opacity 0.2s;
 }
 
+.player-card .player-edit:hover,
 .player-card .player-delete:hover {
   opacity: 1;
 }
@@ -1663,6 +1665,7 @@ body::before {
 }
 
 /* ===== TOUCH TARGET FIXES (minimum 44x44px) ===== */
+.player-card .player-edit,
 .player-card .player-delete {
   min-width: 44px;
   min-height: 44px;
