@@ -461,7 +461,7 @@ function startChallengeGame() {
 
   // Find questions by ID in the same order (cap at 20 for safety)
   currentQuestions = (challengeData.q || []).slice(0, 20)
-    .map(id => triviaData.questions.find(q => q.id === id))
+    .map(id => triviaData.questions.find(q => q.id === Number(id)))
     .filter(q => q != null);
 
   if (currentQuestions.length === 0) {
@@ -510,16 +510,16 @@ function showChallengeResults() {
 
   // My info
   document.getElementById('challengedName').textContent = currentPlayer || 'אתה';
-  document.getElementById('challengedScore').textContent = `${score}/${myTotal}`;
+  document.getElementById('challengedScore').textContent = `${correctCount}/${myTotal}`;
   document.getElementById('challengedTime').textContent = formatTime(myTimeSec);
 
-  // Determine winner
+  // Determine winner (use correctCount, not bonus-inflated score)
   const winnerEl = document.getElementById('challengeWinner');
-  if (score > challengeData.s) {
+  if (correctCount > challengeData.s) {
     winnerEl.textContent = '🏆 ניצחת!';
     winnerEl.className = 'challenge-winner win';
     launchConfetti();
-  } else if (score < challengeData.s) {
+  } else if (correctCount < challengeData.s) {
     winnerEl.textContent = `😤 ${challengeData.c} ניצח/ה!`;
     winnerEl.className = 'challenge-winner lose';
   } else {
@@ -580,7 +580,7 @@ function shareResultsCard() {
 
   const resultsData = {
     a: { n: challengeData.c, s: challengeData.s, t: challengeData.t, tm: challengeData.tm },
-    b: { n: myName, s: score, t: total, tm: myTimeSec }
+    b: { n: myName, s: correctCount, t: total, tm: myTimeSec }
   };
   const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(resultsData)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const baseUrl = window.location.origin + window.location.pathname;
@@ -771,21 +771,21 @@ function editPlayer(oldName, event) {
   // Update badges
   const badges = safeParseJson('historyTriviaBadges', {});
   if (badges[oldName]) { badges[trimmed] = badges[oldName]; delete badges[oldName]; }
-  localStorage.setItem('historyTriviaBadges', JSON.stringify(badges));
+  safeSetItem('historyTriviaBadges', JSON.stringify(badges));
 
   // Update played topics/eras
   const topics = safeParseJson('historyTriviaPlayedTopics', {});
   if (topics[oldName]) { topics[trimmed] = topics[oldName]; delete topics[oldName]; }
-  localStorage.setItem('historyTriviaPlayedTopics', JSON.stringify(topics));
+  safeSetItem('historyTriviaPlayedTopics', JSON.stringify(topics));
 
   const eras = safeParseJson('historyTriviaPlayedEras', {});
   if (eras[oldName]) { eras[trimmed] = eras[oldName]; delete eras[oldName]; }
-  localStorage.setItem('historyTriviaPlayedEras', JSON.stringify(eras));
+  safeSetItem('historyTriviaPlayedEras', JSON.stringify(eras));
 
   // Update daily challenge data
   const daily = safeParseJson('historyTriviaDaily', {});
   if (daily[oldName]) { daily[trimmed] = daily[oldName]; delete daily[oldName]; }
-  localStorage.setItem('historyTriviaDaily', JSON.stringify(daily));
+  safeSetItem('historyTriviaDaily', JSON.stringify(daily));
 
   if (currentPlayer === oldName) currentPlayer = trimmed;
   renderPlayerList();
@@ -970,8 +970,9 @@ function renderStats() {
 
   const level = getLevel(player.totalCorrect);
   const nextLevel = getNextLevel(player.totalCorrect);
-  const accuracy = player.totalGames > 0
-    ? Math.round((player.totalCorrect / (player.totalGames * 10)) * 100)
+  const totalAnswered = player.totalAnswered || (player.totalGames * 10); // fallback for old profiles
+  const accuracy = totalAnswered > 0
+    ? Math.round((player.totalCorrect / totalAnswered) * 100)
     : 0;
   const playedTopics = safeParseJson('historyTriviaPlayedTopics', {});
   const playerTopics = playedTopics[currentPlayer] || [];
@@ -1322,6 +1323,7 @@ function showResults() {
     if (player) {
       const oldLevel = getLevel(player.totalCorrect);
       player.totalCorrect += correctCount; // Use actual correct answers, not bonus-inflated score
+      player.totalAnswered = (player.totalAnswered || 0) + currentQuestions.length;
       player.totalGames += 1;
       player.bestScore = Math.max(player.bestScore, score);
       player.bestStreak = Math.max(player.bestStreak, maxStreak);
