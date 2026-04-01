@@ -255,9 +255,12 @@ function autoTimeOut() {
     if (text === q.options[q.correct]) btn.classList.add('correct');
   });
   document.getElementById('funFactText').textContent = '⏰ נגמר הזמן! ' + q.funFact;
-  document.getElementById('episodeLink').querySelector('span').textContent =
-    `שמע את הפרק: ${q.episode}`;
+  const linkEl = document.getElementById('episodeLink');
+  linkEl.querySelector('span').textContent = `שמע את הפרק: ${q.episode}`;
+  linkEl.href = SPOTIFY_SHOW_URL;
   document.getElementById('funFact').classList.add('visible');
+  dotResults.push(false);
+  renderProgressDots();
   const nextBtn = document.getElementById('nextBtn');
   nextBtn.textContent = currentIndex === currentQuestions.length - 1 ? 'לתוצאות! 🎉' : 'השאלה הבאה ←';
   nextBtn.classList.add('visible');
@@ -865,7 +868,10 @@ function showScreen(id) {
   // Track history for back navigation (don't track if going back)
   const currentScreen = document.querySelector('.screen.active');
   if (currentScreen && currentScreen.id !== id) {
-    screenHistory.push(currentScreen.id);
+    // Don't push duplicate consecutive entries (prevents nav loops)
+    if (screenHistory[screenHistory.length - 1] !== currentScreen.id) {
+      screenHistory.push(currentScreen.id);
+    }
     // Keep history short
     if (screenHistory.length > 10) screenHistory.shift();
   }
@@ -946,13 +952,13 @@ function renderStats() {
   }
 
   // Topic coverage
-  const allTopics = triviaData ? [...new Set(triviaData.map(q => q.topic))] : [];
+  const allTopics = triviaData ? [...new Set(triviaData.questions.map(q => q.topic))] : [];
   const topicCoverage = allTopics.length > 0
     ? `${playerTopics.length} מתוך ${allTopics.length}`
     : '—';
 
   // Era coverage
-  const allEras = triviaData ? [...new Set(triviaData.map(q => q.era))] : [];
+  const allEras = triviaData ? [...new Set(triviaData.questions.map(q => q.era))] : [];
   const eraCoverage = allEras.length > 0
     ? `${playerEras.length} מתוך ${allEras.length}`
     : '—';
@@ -1388,10 +1394,11 @@ function shareScore() {
     `🔥 רצף: ${maxStreak}`,
     ``,
     `בואו לשחק גם! 🎮`,
+    `https://history-for-kids-trivia.vercel.app`,
   ].join('\n');
 
   if (navigator.share) {
-    navigator.share({ text }).catch(() => copyToClipboard(text));
+    navigator.share({ text, url: 'https://history-for-kids-trivia.vercel.app' }).catch(() => copyToClipboard(text));
   } else {
     copyToClipboard(text);
   }
@@ -1477,7 +1484,7 @@ document.addEventListener('keydown', (e) => {
       const btns = document.querySelectorAll('.option-btn');
       if (btns[keyMap[e.key]]) btns[keyMap[e.key]].click();
     }
-    if ((e.key === 'Enter' || e.key === ' ') && answered) {
+    if ((e.key === 'Enter' || e.key === ' ') && answered && document.getElementById('nextBtn').classList.contains('visible')) {
       nextQuestion();
     }
   }
@@ -1510,31 +1517,26 @@ startMode = function(mode, category) {
 // Track game completions
 const _origShowResults = showResults;
 showResults = function() {
-  track('game_complete', {
-    mode: lastMode,
-    score: score,
-    total: questions.length,
-    accuracy: Math.round((score / questions.length) * 100),
-    timed: timedMode,
-    hintsUsed: 3 - hintsLeft
-  });
+  try {
+    track('game_complete', {
+      mode: lastMode,
+      score: score,
+      total: currentQuestions.length,
+      accuracy: Math.round((correctCount / currentQuestions.length) * 100),
+      timed: timedMode,
+      hintsUsed: 3 - hintsRemaining
+    });
+  } catch (e) { /* don't break game */ }
   return _origShowResults.apply(this, arguments);
 };
-
-// Track challenge shares
-const _origCreateChallenge = typeof createChallenge === 'function' ? createChallenge : null;
-if (_origCreateChallenge) {
-  createChallenge = function() {
-    track('challenge_shared', { score, total: questions.length });
-    return _origCreateChallenge.apply(this, arguments);
-  };
-}
 
 // Track hint usage
 const _origUseHint = typeof useHint === 'function' ? useHint : null;
 if (_origUseHint) {
   useHint = function() {
-    track('hint_used', { questionIndex: currentIndex, hintsLeft });
+    try {
+      track('hint_used', { questionIndex: currentIndex, hintsLeft: hintsRemaining });
+    } catch (e) { /* don't break game */ }
     return _origUseHint.apply(this, arguments);
   };
 }

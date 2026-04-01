@@ -997,7 +997,7 @@ body::before {
   padding: 24px 20px;
   background: rgba(255, 255, 255, 0.85);
   border: 2px solid var(--gold);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius);
   box-shadow: 0 2px 8px var(--shadow);
 }
 
