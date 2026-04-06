@@ -970,9 +970,10 @@ function renderStats() {
 
   const level = getLevel(player.totalCorrect);
   const nextLevel = getNextLevel(player.totalCorrect);
-  const totalAnswered = player.totalAnswered || (player.totalGames * 10); // fallback for old profiles
+  // Use tracked totalAnswered, but ensure it's at least totalCorrect (handles pre-fix profiles)
+  const totalAnswered = Math.max(player.totalAnswered || 0, player.totalGames * 10, player.totalCorrect);
   const accuracy = totalAnswered > 0
-    ? Math.round((player.totalCorrect / totalAnswered) * 100)
+    ? Math.min(100, Math.round((player.totalCorrect / totalAnswered) * 100))
     : 0;
   const playedTopics = safeParseJson('historyTriviaPlayedTopics', {});
   const playerTopics = playedTopics[currentPlayer] || [];
